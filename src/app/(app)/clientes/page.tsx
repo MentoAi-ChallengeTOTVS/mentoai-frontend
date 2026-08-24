@@ -25,11 +25,11 @@ import type { Cliente } from "@/types/domain";
  *    `porte`, `criacao` — sem status/ativo, diferente de `Usuario`, que tem
  *    `ativo`). Não inventei um campo novo sem validar com o time — fica
  *    como gap documentado, não implementado aqui.
- * 2. A ação "Ver detalhes" do Figma abre, por enquanto, o mesmo painel de
- *    cadastro em modo de edição, porque a tela de detalhes dedicada
- *    (issue #65, "estrutura da tela de detalhes do cliente") ainda não
- *    existe. Quando #65 for implementada, essa ação deve navegar pra lá —
- *    e a edição pode continuar aqui, se mudar, sair daqui.
+ * 2. A ação "Ver detalhes" navega para a tela de detalhes dedicada
+ *    (issue #65 + #86, `/clientes/[id]`) desde que ela passou a existir.
+ *    Como essa ação deixou de abrir o painel de cadastro, foi adicionado um
+ *    ícone de edição (mesmo padrão do `Pencil` em `Row/Usuario`) pra manter
+ *    a edição acessível na própria listagem.
  */
 
 const TAMANHO_PAGINA = 6; // bate com o "Exibindo 6 de 128 clientes" do Figma
@@ -112,7 +112,7 @@ export default function ClientesPage() {
               key={cliente.id}
               cliente={cliente}
               striped={i % 2 === 1}
-              onVerDetalhes={() => setPainelAberto(cliente)}
+              onEditar={() => setPainelAberto(cliente)}
             />
           ))
         )}
