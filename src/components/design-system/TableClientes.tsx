@@ -1,6 +1,8 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 import type { Cliente } from "@/types/domain";
 
 /**
@@ -50,13 +52,14 @@ export function BadgePorte({ porte, className }: { porte: string; className?: st
 export function RowCliente({
   cliente,
   striped = false,
-  onVerDetalhes,
+  onEditar,
   className,
 }: {
   cliente: Cliente;
   /** O Figma mostra a 1ª linha da tabela já listrada — controlado pelo chamador. */
   striped?: boolean;
-  onVerDetalhes?: () => void;
+  /** Abre o painel de cadastro em modo de edição (ver nota de escopo em `clientes/page.tsx`). */
+  onEditar?: (cliente: Cliente) => void;
   className?: string;
 }) {
   return (
@@ -75,9 +78,17 @@ export function RowCliente({
         <BadgePorte porte={cliente.porte} />
       </div>
       <p className="w-40 shrink-0 text-corpo text-sidebar-muted-2">{formatData(cliente.criacao)}</p>
-      <div className="flex w-30 shrink-0 items-center">
-        <button type="button" onClick={onVerDetalhes} className="text-corpo text-menta">
+      <div className="flex w-40 shrink-0 items-center gap-3">
+        <Link href={`/clientes/${cliente.id}`} className="text-corpo text-menta">
           Ver detalhes
+        </Link>
+        <button
+          type="button"
+          onClick={() => onEditar?.(cliente)}
+          aria-label="Editar cliente"
+          className="flex items-center justify-center rounded bg-neutro-background p-1.5"
+        >
+          <Pencil className="size-3.5 text-neutro-dark" />
         </button>
       </div>
     </div>
@@ -100,7 +111,7 @@ export function TabelaClientesCabecalho({ className }: { className?: string }) {
       <p className="w-50 shrink-0">Segmento</p>
       <p className="w-30 shrink-0">Porte</p>
       <p className="w-40 shrink-0">Data de Cadastro</p>
-      <p className="w-30 shrink-0">Ação</p>
+      <p className="w-40 shrink-0">Ação</p>
     </div>
   );
 }

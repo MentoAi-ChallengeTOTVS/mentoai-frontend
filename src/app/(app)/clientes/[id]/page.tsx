@@ -1,0 +1,144 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ChevronRight, Sparkles } from "lucide-react";
+import { BadgePorte } from "@/components/design-system/TableClientes";
+import { BadgeGeradoPorIA } from "@/components/design-system/Badges";
+import { CardSinaisRisco, CardOportunidades } from "@/components/design-system/Cards";
+import { ItemTimelineReuniao } from "@/components/design-system/Timeline";
+import { MOCK_CLIENTES } from "@/mocks/clientes";
+import { MOCK_ANALISES } from "@/mocks/reunioes";
+import {
+  reunioesDoCliente,
+  resumoTimelineDaReuniao,
+  sinaisRiscoDoCliente,
+  oportunidadesDoCliente,
+  resumoEstrategicoDoCliente,
+  sugestoesEstrategicasDoCliente,
+} from "@/mocks/perfilCliente";
+import { SugestoesEstrategicas } from "./SugestoesEstrategicas";
+
+/**
+ * Tela Perfil do Cliente / Visão 360° do Cliente (Figma: frame
+ * "perfil-cliente-mentoai", 44:326) — features F02/F06, issues #65
+ * ("estrutura da tela de detalhes do cliente") e #86 ("Visão 360° do
+ * Cliente — histórico + IA"). As duas issues mapeiam pro mesmo frame no
+ * Figma, então viraram uma única página aqui.
+ *
+ * Server Component (sem "use client") — a página só lê/deriva dados
+ * mockados de forma síncrona; a única parte interativa (accordion de
+ * Sugestões Estratégicas) foi isolada em `SugestoesEstrategicas.tsx`.
+ * `params` é `Promise`, mesmo padrão de `reunioes/[id]/page.tsx`.
+ *
+ * "Iniciar conversa no Copiloto" aponta pra `/copiloto`, tela do Copiloto
+ * (feature F04) que ainda não existe nesta base — fora do escopo do Breno.
+ *
+ * Agregações (`Sinais de Risco`, `Oportunidades`, resumo/sugestões
+ * estratégicas) vêm de `src/mocks/perfilCliente.ts` — ver as notas lá sobre
+ * a diferença entre os números reais derivados do mock e os números
+ * ilustrativos do Figma.
+ */
+
+export default async function PerfilClientePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const clienteId = Number(id);
+  const cliente = MOCK_CLIENTES.find((c) => c.id === clienteId);
+
+  if (!cliente) notFound();
+
+  const reunioes = reunioesDoCliente(clienteId);
+  const riscos = sinaisRiscoDoCliente(clienteId);
+  const oportunidades = oportunidadesDoCliente(clienteId);
+
+  return (
+    <>
+      <div className="flex w-full flex-col items-start gap-3">
+        <div className="flex items-center gap-1.5 text-legenda leading-legenda text-neutro-muted">
+          <Link href="/clientes" className="hover:text-navy">
+            Clientes
+          </Link>
+          <ChevronRight className="size-2.5" />
+          <span className="text-navy">{cliente.nome}</span>
+        </div>
+        <div className="flex flex-col items-start gap-1">
+          <p className="text-titulo leading-titulo font-medium text-navy">{cliente.nome}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-legenda leading-legenda text-neutro-muted">
+              Segmento: <span className="font-medium text-neutro-dark">{cliente.segmento}</span>
+            </p>
+            <span className="text-legenda text-neutro-muted">•</span>
+            <BadgePorte porte={cliente.porte} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex w-full items-start gap-6">
+        <div className="flex flex-1 flex-col items-start gap-5">
+          <p className="text-subtitulo font-medium text-neutro-dark">Linha do Tempo de Reuniões</p>
+
+          {reunioes.length === 0 ? (
+            <div className="flex w-full items-center rounded-lg border border-dashed border-neutro-border bg-white p-6">
+              <p className="text-corpo text-neutro-muted">
+                Esse cliente ainda não tem nenhuma reunião registrada.
+              </p>
+            </div>
+          ) : (
+            <div className="flex w-full flex-col items-start">
+              {reunioes.map((reuniao, i) => (
+                <ItemTimelineReuniao
+                  key={reuniao.id}
+                  reuniao={reuniao}
+                  resumo={resumoTimelineDaReuniao(reuniao.id)}
+                  status={MOCK_ANALISES[reuniao.id]?.statusProcessamento ?? "PENDENTE"}
+                  ultimo={i === reunioes.length - 1}
+                />
+              ))}
+            </div>
+          )}
+
+          {reunioes.length > 0 && (
+            <div className="flex w-full items-start pl-8">
+              <Link href="/reunioes" className="text-corpo font-medium text-menta">
+                Ver todas as reuniões
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="flex w-[480px] shrink-0 flex-col items-start gap-4">
+          <CardSinaisRisco
+            quantidade={riscos.length}
+            itens={riscos.map((s) => s.descricao)}
+          />
+          <CardOportunidades
+            quantidade={oportunidades.length}
+            itens={oportunidades.map((s) => s.descricao)}
+          />
+
+          <div className="flex w-full flex-col items-start gap-4 rounded-lg border border-neutro-border bg-white p-6">
+            <div className="flex w-full items-center gap-2">
+              <p className="text-subtitulo font-medium text-neutro-dark">Resumo Estratégico</p>
+              <BadgeGeradoPorIA />
+            </div>
+            <p className="w-full text-corpo text-neutro-dark">
+              {resumoEstrategicoDoCliente(clienteId, cliente.nome)}
+            </p>
+          </div>
+
+          <Link
+            href="/copiloto"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-menta px-4 text-corpo font-medium text-white"
+          >
+            <Sparkles className="size-4" />
+            Iniciar conversa no Copiloto
+          </Link>
+        </div>
+      </div>
+
+      <SugestoesEstrategicas itens={sugestoesEstrategicasDoCliente(clienteId)} />
+    </>
+  );
+}
