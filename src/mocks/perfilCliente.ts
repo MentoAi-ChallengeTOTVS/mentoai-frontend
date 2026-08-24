@@ -119,14 +119,59 @@ export function resumoEstrategicoDoCliente(clienteId: number, nomeCliente: strin
   } no histórico de reuniões analisadas até agora.`;
 }
 
-export function sugestoesEstrategicasDoCliente(clienteId: number): SugestaoEstrategica[] {
-  return (
-    SUGESTOES_CURADAS[clienteId] ?? [
-      {
-        titulo: "Aprofundar o histórico de reuniões para gerar sugestões",
-        justificativa:
-          "Ainda não há sinais suficientes no histórico desse cliente para a IA sugerir próximos passos estratégicos.",
-      },
-    ]
-  );
+// Fallback usado pela "geração" quando o cliente não tem conteúdo curado —
+// deriva sugestões reais a partir dos sinais de risco/oportunidade já
+// calculados acima, em vez de devolver sempre o mesmo texto genérico solto.
+function gerarSugestoesFallback(clienteId: number, nomeCliente: string): SugestaoEstrategica[] {
+  const riscos = sinaisRiscoDoCliente(clienteId);
+  const oportunidades = oportunidadesDoCliente(clienteId);
+  const sugestoes: SugestaoEstrategica[] = [];
+
+  if (oportunidades.length > 0) {
+    sugestoes.push({
+      titulo: `Explorar as oportunidades identificadas em ${nomeCliente}`,
+      justificativa: `A IA identificou ${oportunidades.length} ${
+        oportunidades.length === 1 ? "oportunidade" : "oportunidades"
+      } no histórico de reuniões: ${oportunidades.map((s) => s.descricao).join("; ")}.`,
+    });
+  }
+  if (riscos.length > 0) {
+    sugestoes.push({
+      titulo: `Endereçar os sinais de risco de ${nomeCliente}`,
+      justificativa: `A IA identificou ${riscos.length} ${
+        riscos.length === 1 ? "sinal de risco" : "sinais de risco"
+      } no histórico de reuniões: ${riscos.map((s) => s.descricao).join("; ")}.`,
+    });
+  }
+  if (sugestoes.length === 0) {
+    sugestoes.push({
+      titulo: "Aprofundar o histórico de reuniões para gerar sugestões",
+      justificativa: `Ainda não há sinais suficientes no histórico de ${nomeCliente} para a IA sugerir próximos passos estratégicos.`,
+    });
+  }
+  return sugestoes;
+}
+
+/**
+ * Estado inicial da seção "Sugestões Estratégicas" — só clientes com
+ * conteúdo curado (Construtora Horizonte) já chegam com sugestões
+ * "geradas"; os demais começam com `null` (estado vazio de verdade, issue
+ * #101 pede um estado de vazio explícito antes da 1ª geração).
+ */
+export function sugestoesJaGeradasDoCliente(clienteId: number): SugestaoEstrategica[] | null {
+  return SUGESTOES_CURADAS[clienteId] ?? null;
+}
+
+/**
+ * Simula a ação de gerar/atualizar sugestões (issue #101) — usada tanto
+ * pelo botão "Gerar sugestões" (estado vazio) quanto "Atualizar sugestões"
+ * (já existem sugestões). Pra clientes com conteúdo curado, "atualizar"
+ * devolve a mesma lista curada (simulando uma nova chamada de IA sobre os
+ * mesmos dados); os demais recebem o fallback derivado dos sinais reais.
+ */
+export function gerarSugestoesEstrategicasDoCliente(
+  clienteId: number,
+  nomeCliente: string
+): SugestaoEstrategica[] {
+  return SUGESTOES_CURADAS[clienteId] ?? gerarSugestoesFallback(clienteId, nomeCliente);
 }

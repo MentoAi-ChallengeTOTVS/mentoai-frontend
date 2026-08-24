@@ -13,7 +13,7 @@ import {
   sinaisRiscoDoCliente,
   oportunidadesDoCliente,
   resumoEstrategicoDoCliente,
-  sugestoesEstrategicasDoCliente,
+  sugestoesJaGeradasDoCliente,
 } from "@/mocks/perfilCliente";
 import { SugestoesEstrategicas } from "./SugestoesEstrategicas";
 
@@ -26,8 +26,9 @@ import { SugestoesEstrategicas } from "./SugestoesEstrategicas";
  *
  * Server Component (sem "use client") — a página só lê/deriva dados
  * mockados de forma síncrona; a única parte interativa (accordion de
- * Sugestões Estratégicas) foi isolada em `SugestoesEstrategicas.tsx`.
- * `params` é `Promise`, mesmo padrão de `reunioes/[id]/page.tsx`.
+ * Sugestões Estratégicas, com ação de gerar/atualizar — issue #101) foi
+ * isolada em `SugestoesEstrategicas.tsx`. `params` é `Promise`, mesmo
+ * padrão de `reunioes/[id]/page.tsx`.
  *
  * "Iniciar conversa no Copiloto" aponta pra `/copiloto`, tela do Copiloto
  * (feature F04) que ainda não existe nesta base — fora do escopo do Breno.
@@ -138,7 +139,11 @@ export default async function PerfilClientePage({
         </div>
       </div>
 
-      <SugestoesEstrategicas itens={sugestoesEstrategicasDoCliente(clienteId)} />
+      <SugestoesEstrategicas
+        clienteId={clienteId}
+        nomeCliente={cliente.nome}
+        itensIniciais={sugestoesJaGeradasDoCliente(clienteId)}
+      />
     </>
   );
 }
