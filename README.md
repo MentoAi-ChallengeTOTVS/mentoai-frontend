@@ -37,7 +37,7 @@ O sandbox onde esse scaffold foi gerado não tem acesso de rede pra baixar os as
 
 Pra resolver isso sem depender de assets frágeis, os ícones foram trocados por equivalentes do pacote `lucide-react` (os nomes das camadas no Figma — `search`, `layout-dashboard`, `users`, `calendar`, `bell`, `sparkles`, `star-icon`, `clock`, `check`, `alert-triangle` — batem exatamente com ícones do Lucide, então a troca é 1:1 visualmente). É mais fácil de manter do que gerenciar arquivos de imagem soltos.
 
-A logo da MentoAI (hoje um placeholder "M" verde) e a foto de avatar do usuário (hoje iniciais) precisam ser substituídas pelos assets reais — exportem direto do Figma (clique direito no layer → Export) e coloquem em `public/`.
+A logo da MentoAI já usa o asset real (`public/logo-mentoai.png`, também reaproveitado como favicon/app icon em `src/app/icon.png`) — veio dos arquivos do projeto, não do Figma, já que o export do Figma esbarrava na mesma limitação de rede acima. Aparece no topo da `Sidebar` e no painel de boas-vindas do Login (`PanelBoasVindasLogin`). A foto de avatar do usuário (hoje iniciais) segue como placeholder — precisa ser substituída pelo asset real quando existir.
 
 O `Card/Tendencia-Sinais` é um caso à parte: no Figma ele é composto por 3 imagens SVG de sparkline exportadas (linhas estáticas). Como isso é um gráfico alimentado por dado real — varia por cliente/período, não é um ícone fixo — reconstruí como um `<svg>` gerado a partir dos pontos recebidos via prop (`buildPontos()` em `Cards.tsx`), do mesmo jeito que qualquer lib de charting faria. Não dá pra versionar "gráfico com os dados de hoje" como asset congelado.
 
@@ -51,15 +51,15 @@ O recorte que o `get_design_context` trouxe do Figma pra esse painel termina no 
 
 ## Telas implementadas
 
-- **Clientes** (`src/app/(app)/clientes/page.tsx`) — issue [#64](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/64) (F02). Listagem paginada (`RowCliente` + `TabelaClientesCabecalho`/`Rodape`), busca por nome/segmento, cadastro e edição via `PanelCadastroCliente` (drawer). Dados de `src/mocks/clientes.ts` (24 clientes fictícios) enquanto não há backend.
-  - **Gap documentado**: a issue pede "gerenciamento de status", mas `Cliente` no domínio (`src/types/domain.ts`) não tem campo de status/ativo — diferente de `Usuario`, que tem. Não inventei o campo; fica pendente de validação com o time.
-  - **Decisão temporária**: a ação "Ver detalhes" do Figma abre o painel de edição (reaproveitando `PanelCadastroCliente` em modo edição, via a nova prop `cliente`), porque a tela de detalhes dedicada (issue #65) ainda não existe. Quando #65 for implementada, revisar se "Ver detalhes" deve navegar pra lá em vez de abrir o drawer.
 - **Login / Estado de sessão / Meu Perfil / Logout** (`src/app/login/page.tsx`, `src/lib/auth.tsx`, `src/app/(app)/perfil/page.tsx`) — issue [#60](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/60) (F01). `src/lib/auth.tsx` é uma autenticação **mockada** (`AuthProvider`/`useAuth()`): qualquer e-mail/senha não vazios autenticam, com um delay simulando rede; o perfil vira `DIRETOR_COMERCIAL` se o e-mail contiver "diretor", senão `EXECUTIVO_COMERCIAL` (é o único jeito de ver a seção "Administração" da Sidebar sem UI extra). Sessão persiste em `localStorage`. `(app)/layout.tsx` agora protege as rotas autenticadas de verdade — sem sessão, redireciona pra `/login`; `/` só redireciona pra `/clientes` ou `/login` conforme o estado.
   - **Gap documentado**: "Meu Perfil" **não tem frame no Figma** — o único "perfil" no arquivo é `perfil-cliente-mentoai` (Visão 360° do *cliente*, feature F06/#86), não a conta do usuário logado. A tela em `(app)/perfil/page.tsx` foi montada do zero seguindo o Manual de Identidade Visual e os padrões de formulário já usados em `Panels.tsx`, sem referência visual pra bater 1:1. Vale desenhar no Figma se o time achar importante.
   - Os 2 blobs decorativos (`decor-light-bg`) do painel navy da tela de Login não foram reproduzidos — puramente decorativos, mesma limitação de rede pra baixar assets do README (seção de ícones/imagens).
 - **Clientes** (`src/app/(app)/clientes/page.tsx`) — issue [#64](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/64) (F02). Listagem paginada (`RowCliente` + `TabelaClientesCabecalho`/`Rodape`), busca por nome/segmento, cadastro e edição via `PanelCadastroCliente` (drawer). Dados de `src/mocks/clientes.ts` (24 clientes fictícios) enquanto não há backend.
   - **Gap documentado**: a issue pede "gerenciamento de status", mas `Cliente` no domínio (`src/types/domain.ts`) não tem campo de status/ativo — diferente de `Usuario`, que tem. Não inventei o campo; fica pendente de validação com o time.
   - **Decisão temporária**: a ação "Ver detalhes" do Figma abre o painel de edição (reaproveitando `PanelCadastroCliente` em modo edição, via a nova prop `cliente`), porque a tela de detalhes dedicada (issue #65) ainda não existe. Quando #65 for implementada, revisar se "Ver detalhes" deve navegar pra lá em vez de abrir o drawer.
+- **Usuários** (`src/app/(app)/usuarios/page.tsx`) — issue [#61](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/61) (F01). Listagem paginada (5 por página, como no Figma) com `RowUsuario`, cadastro e edição via `PanelEditarUsuario` (agora com `usuario` opcional — ausente = criação, mesmo padrão do `PanelCadastroCliente`). Dados de `src/mocks/usuarios.ts` (14 usuários fictícios). **Restrita ao perfil Diretor Comercial** (confirmado em `claude/roteiro_validacao_telas.md`): além da Sidebar só mostrar o item pra esse perfil, a rota em si bloqueia acesso direto por URL com uma tela de "Acesso restrito".
+  - O Figma aqui não tem barra de busca no header (só o botão "Novo usuário") — não inventei uma pra manter fidelidade.
+  - `table-header`/`table-footer` ficaram inline na página, não viraram componentes exportados como em `TableClientes.tsx`, porque o Figma não promoveu esses frames a componentes nomeados aqui (só `Row/Usuario` é) — diferente do caso de Clientes, onde `Table/Row-Cliente` é um componente formal.
 - **Shell compartilhado** (`src/app/(app)/layout.tsx`) — Sidebar + wrapper de conteúdo, reaproveitado por todas as telas autenticadas. Desde #60, `perfil`/`userName` vêm da sessão real (`useAuth()`) em vez do usuário fixo de exemplo do Figma.
 
 **Correções feitas no design system ao construir as telas reais** (validam a tese de que só se vê certos gaps na hora de montar a tela, não no showcase isolado):
@@ -73,7 +73,7 @@ O design system está 100% portado (ver seção acima) — todos os componentes 
 
 Falta:
 
-- As outras 11 telas do backlog (Usuários, Nova Reunião, Detalhe da Reunião, Perfil do Cliente, Dashboard, Alertas, Reuniões, Busca Global, Copiloto, Histórico de Análises, Sugestões Estratégicas) — que vão consumir os componentes já prontos.
+- As outras 10 telas do backlog (Nova Reunião, Detalhe da Reunião, Perfil do Cliente, Dashboard, Alertas, Reuniões, Busca Global, Copiloto, Histórico de Análises, Sugestões Estratégicas) — que vão consumir os componentes já prontos.
 - Camada de dados: hoje não há chamada a API nenhuma — tudo precisa ser conectado ao backend Java quando ele estiver pronto (ou a mocks/fixtures tipados com `src/types/domain.ts` enquanto isso, como já feito em `src/mocks/clientes.ts`).
 
 ## Observação técnica

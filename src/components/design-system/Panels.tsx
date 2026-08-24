@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
+import Image from "next/image";
 import clsx from "clsx";
 import {
   AlertTriangle,
@@ -371,9 +372,7 @@ export function PanelBoasVindasLogin({
       data-name="Panel/Boas-Vindas-Login"
     >
       <div className="flex w-full items-center gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-[10px] bg-menta text-xl font-bold text-white">
-          M
-        </div>
+        <Image src="/logo-mentoai.png" alt="" width={48} height={48} className="size-12 shrink-0" priority />
         <p className="whitespace-nowrap text-[32px] leading-[40px] font-semibold text-white">
           Mento<span className="text-menta">AI</span>
         </p>
@@ -394,10 +393,11 @@ export function PanelBoasVindasLogin({
 // tiver algo diferente, ajustar aqui depois de conferir no arquivo.
 
 export interface EditarUsuarioInput {
+  id?: number;
   nome: string;
   email: string;
   perfil: PerfilUsuario;
-  /** Vazio = manter a senha atual (regra vinda do texto de apoio do Figma). */
+  /** Vazio = manter a senha atual (regra vinda do texto de apoio do Figma). Obrigatória na criação. */
   senha?: string;
   ativo: boolean;
 }
@@ -441,23 +441,30 @@ function StatusDotLabel({ ativo }: { ativo: boolean }) {
 }
 
 export function PanelEditarUsuario({
+  /**
+   * Quando ausente, o painel abre em modo de criação (campos vazios, título
+   * "Novo usuário", senha obrigatória) — reaproveitado pela tela de
+   * Usuários (issue #61) pra cobrir "cadastro/edição" com um único painel,
+   * mesmo padrão adotado em `PanelCadastroCliente` (issue #64).
+   */
   usuario,
   onClose,
   onCancel,
   onSubmit,
   className,
 }: {
-  usuario: Usuario;
+  usuario?: Usuario;
   onClose?: () => void;
   onCancel?: () => void;
   onSubmit?: (data: EditarUsuarioInput) => void;
   className?: string;
 }) {
-  const [nome, setNome] = useState(usuario.nome);
-  const [email, setEmail] = useState(usuario.email);
-  const [perfil, setPerfil] = useState<PerfilUsuario>(usuario.perfil);
+  const [nome, setNome] = useState(usuario?.nome ?? "");
+  const [email, setEmail] = useState(usuario?.email ?? "");
+  const [perfil, setPerfil] = useState<PerfilUsuario>(usuario?.perfil ?? "EXECUTIVO_COMERCIAL");
   const [senha, setSenha] = useState("");
-  const [ativo, setAtivo] = useState(usuario.ativo);
+  const [ativo, setAtivo] = useState(usuario?.ativo ?? true);
+  const criando = !usuario;
 
   return (
     <div
@@ -468,7 +475,7 @@ export function PanelEditarUsuario({
       data-node-id="91:1167"
       data-name="Panel/Editar-Usuario"
     >
-      <PanelHeader titulo="Editar usuário" onClose={onClose} />
+      <PanelHeader titulo={criando ? "Novo usuário" : "Editar usuário"} onClose={onClose} />
       <div className="flex w-full flex-col items-start gap-4">
         <CampoTexto label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
         <CampoTexto
@@ -488,11 +495,12 @@ export function PanelEditarUsuario({
             label="Senha"
             type="password"
             placeholder="••••••••"
+            required={criando}
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
           />
           <p className="text-caption leading-caption text-neutro-muted">
-            Deixe em branco para manter a senha atual
+            {criando ? "Senha inicial do usuário" : "Deixe em branco para manter a senha atual"}
           </p>
         </div>
         <div className="flex flex-col items-start gap-2">
@@ -507,7 +515,9 @@ export function PanelEditarUsuario({
         <BotaoCancelar onClick={onCancel} />
         <ButtonPrimary
           className="flex-1 justify-center"
-          onClick={() => onSubmit?.({ nome, email, perfil, senha: senha || undefined, ativo })}
+          onClick={() =>
+            onSubmit?.({ id: usuario?.id, nome, email, perfil, senha: senha || undefined, ativo })
+          }
         >
           Salvar
         </ButtonPrimary>
