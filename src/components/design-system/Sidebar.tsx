@@ -156,7 +156,11 @@ export function Sidebar({
           </button>
 
           {NAV_ITEMS.map((item) => (
-            <NavLink key={item.href} item={item} active={activeHref === item.href} />
+            <NavLink
+              key={item.href}
+              item={item}
+              active={activeHref === item.href || activeHref.startsWith(`${item.href}/`)}
+            />
           ))}
 
           {isDiretor && (
@@ -167,7 +171,11 @@ export function Sidebar({
                 </p>
               </div>
               {ADMIN_NAV_ITEMS.map((item) => (
-                <NavLink key={item.href} item={item} active={activeHref === item.href} />
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  active={activeHref === item.href || activeHref.startsWith(`${item.href}/`)}
+                />
               ))}
             </>
           )}

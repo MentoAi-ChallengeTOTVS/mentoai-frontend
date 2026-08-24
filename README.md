@@ -60,12 +60,22 @@ O recorte que o `get_design_context` trouxe do Figma pra esse painel termina no 
 - **Usuários** (`src/app/(app)/usuarios/page.tsx`) — issue [#61](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/61) (F01). Listagem paginada (5 por página, como no Figma) com `RowUsuario`, cadastro e edição via `PanelEditarUsuario` (agora com `usuario` opcional — ausente = criação, mesmo padrão do `PanelCadastroCliente`). Dados de `src/mocks/usuarios.ts` (14 usuários fictícios). **Restrita ao perfil Diretor Comercial** (confirmado em `claude/roteiro_validacao_telas.md`): além da Sidebar só mostrar o item pra esse perfil, a rota em si bloqueia acesso direto por URL com uma tela de "Acesso restrito".
   - O Figma aqui não tem barra de busca no header (só o botão "Novo usuário") — não inventei uma pra manter fidelidade.
   - `table-header`/`table-footer` ficaram inline na página, não viraram componentes exportados como em `TableClientes.tsx`, porque o Figma não promoveu esses frames a componentes nomeados aqui (só `Row/Usuario` é) — diferente do caso de Clientes, onde `Table/Row-Cliente` é um componente formal.
+- **Nova Reunião** (`src/app/(app)/reunioes/nova/page.tsx`) — issue [#70](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/70) (F03). Upload de transcrição (`CardUploadTranscricao`), seleção de cliente (`src/mocks/clientes.ts`) e data da reunião, envio simulado com `PanelStatusEnvio` animando Pendente → Processando (barra de progresso) → Processada — liga com BL001 (upload) e BL003/BL016 (estado assíncrono de processamento).
+  - **Gap de persistência**: sem backend, o envio é só simulado em memória — a reunião criada não é adicionada à lista mockada de `/reunioes` (não há estado global entre rotas, mesmo limite já documentado em Clientes/Usuários). Por isso o fluxo termina na própria página, com um link pra "Ver todas as reuniões" em vez de redirecionar pra um registro que não existiria lá.
+- **Reuniões — lista** (`src/app/(app)/reunioes/page.tsx`) — issue [#71](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/71) (F03, parte 1). Listagem paginada (8 por página, como no Figma) com `Filter-Bar` (Cliente/Período/Status + busca) e `Row/Reuniao`, cada linha navegando pro Detalhe da Reunião. Dados de `src/mocks/reunioes.ts` (24 reuniões fictícias, com `AnaliseIA`/`SinalComercial` associados).
+- **Detalhe da Reunião** (`src/app/(app)/reunioes/[id]/page.tsx`) — issue #71 (parte 2). Resumo executivo (`CardResumoExecutivo`), sinais comerciais identificados (`CardSinaisComerciais`, os 9 tipos com ícone + texto) e Histórico de Análises (`CardHistoricoAnalises`) — cobre BL003/BL004/BL005. Server Component (`params` como `Promise`, convenção desta versão do Next.js); `notFound()` pra id inexistente.
+  - Resumo/sinais só aparecem quando `statusProcessamento === "PROCESSADA"` — pros outros 3 estados (Pendente/Processando/Erro), a página mostra um card de estado (fila de processamento, análise em andamento, ou a `mensagemErro`) em vez de conteúdo vazio.
+  - O campo "Participante" que uma versão anterior do frame no Figma tinha foi removido pelo time antes desta implementação (ver `claude/telas_breno_figma.md`) — o frame já não o inclui, e esta página também não.
+  - A aba "Histórico de Análises" (BL015) é uma seção fixa na página, não uma aba alternável — replica a decisão já tomada no Figma (ver `claude/roteiro_validacao_telas.md`, decisão pendente 1).
 - **Shell compartilhado** (`src/app/(app)/layout.tsx`) — Sidebar + wrapper de conteúdo, reaproveitado por todas as telas autenticadas. Desde #60, `perfil`/`userName` vêm da sessão real (`useAuth()`) em vez do usuário fixo de exemplo do Figma.
 
 **Correções feitas no design system ao construir as telas reais** (validam a tese de que só se vê certos gaps na hora de montar a tela, não no showcase isolado):
 - `BadgePorte` (`TableClientes.tsx`) usava uma cor fixa pra todos os portes; o Figma real tem 3 cores diferentes por porte (Pequeno/Médio/Grande) — corrigido.
 - `Sidebar` tinha `h-[900px]` fixo (herdado do tamanho do frame no Figma) — trocado por `h-screen`, senão a sidebar não esticava numa página real com viewport diferente de 900px.
 - `Sidebar` ganhou `onLogout` (mostra um ícone de sair no rodapé quando presente) e o bloco de usuário virou link pra `/perfil`. O label de perfil também deixou de ser hardcoded ("Executiva Comercial" fixo pro exemplo do Figma) e passou a usar o mapeamento genérico `EXECUTIVO_COMERCIAL`/`DIRETOR_COMERCIAL` → "Executivo Comercial"/"Diretor Comercial", já que agora mostra qualquer usuário logado, não só a Fernanda Costa do mock.
+- `Sidebar`: o item ativo (`activeHref`) agora também acende pra sub-rotas (`/reunioes/nova`, `/reunioes/5`, ...), não só pro path exato — necessário assim que a primeira tela com sub-rotas (Reuniões) passou a existir.
+- `RowReuniao` (`Rows.tsx`) ganhou `status` (antes fixo em `"PROCESSADA"`) e `href` opcionais — com `href`, a row inteira vira link (usado na lista de Reuniões pra navegar pro Detalhe).
+- **Cuidado ao compor `Panel/Status-Envio` num flex row**: o componente já tem `w-full` na própria className base (pensado pra um wrapper de largura fixa em volta dele, não pra competir com `flex-1` de um irmão). Passar uma largura fixa (`w-[380px]`) direto no `className` do componente conflita com esse `w-full` interno e quebra o layout (o irmão flex-1 fica espremido a ~0px). Solução usada em `reunioes/nova/page.tsx`: envolver o componente num `<div className="w-[380px] shrink-0">` em vez de passar a largura pelo próprio `className`.
 
 ## O que falta
 
@@ -73,8 +83,8 @@ O design system está 100% portado (ver seção acima) — todos os componentes 
 
 Falta:
 
-- As outras 10 telas do backlog (Nova Reunião, Detalhe da Reunião, Perfil do Cliente, Dashboard, Alertas, Reuniões, Busca Global, Copiloto, Histórico de Análises, Sugestões Estratégicas) — que vão consumir os componentes já prontos.
-- Camada de dados: hoje não há chamada a API nenhuma — tudo precisa ser conectado ao backend Java quando ele estiver pronto (ou a mocks/fixtures tipados com `src/types/domain.ts` enquanto isso, como já feito em `src/mocks/clientes.ts`).
+- As outras 7 telas do backlog do Breno e do Pedro (Perfil do Cliente/Visão 360°, Dashboard, Alertas, Busca Global, Copiloto, Sugestões Estratégicas — Histórico de Análises já está coberto como seção dentro do Detalhe da Reunião) — que vão consumir os componentes já prontos.
+- Camada de dados: hoje não há chamada a API nenhuma — tudo precisa ser conectado ao backend Java quando ele estiver pronto (ou a mocks/fixtures tipados com `src/types/domain.ts` enquanto isso, como já feito em `src/mocks/clientes.ts`, `src/mocks/usuarios.ts` e `src/mocks/reunioes.ts`).
 
 ## Observação técnica
 

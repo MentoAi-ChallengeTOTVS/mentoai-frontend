@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
 import { Calendar, Building2, ChevronRight, Pencil } from "lucide-react";
 import { BadgeStatus, BadgePrioridade, BadgeStatusAcesso } from "./Badges";
 import type {
@@ -9,6 +10,7 @@ import type {
   Usuario,
   TipoSinalComercial,
   PrioridadeAlerta,
+  StatusProcessamento,
 } from "@/types/domain";
 
 /**
@@ -35,22 +37,27 @@ const SINAL_DOT_COLOR: Partial<Record<TipoSinalComercial, string>> = {
 export function RowReuniao({
   reuniao,
   tiposSinais = [],
+  status = "PROCESSADA",
+  href,
   className,
 }: {
   reuniao: Reuniao;
   /** Tipos de SinalComercial identificados nessa reunião (pra render dos dots). */
   tiposSinais?: TipoSinalComercial[];
+  /** Status do processamento da AnaliseIA — Figma só mostra o exemplo "Processada". */
+  status?: StatusProcessamento;
+  /** Quando presente, a row inteira vira link (Reuniões -> Detalhe da Reunião). */
+  href?: string;
   className?: string;
 }) {
-  return (
-    <div
-      className={clsx(
-        "flex w-full items-center gap-4 border-b border-neutro-border bg-white px-6 py-4",
-        className
-      )}
-      data-node-id="59:646"
-      data-name="Row/Reuniao"
-    >
+  const rowClassName = clsx(
+    "flex w-full items-center gap-4 border-b border-neutro-border bg-white px-6 py-4",
+    href && "transition-colors hover:bg-neutro-background",
+    className
+  );
+
+  const content = (
+    <>
       <p className="flex-1 truncate text-subtitulo font-medium text-navy">
         {reuniao.cliente.nome}
       </p>
@@ -61,24 +68,44 @@ export function RowReuniao({
         {reuniao.duracaoMinutos} min
       </p>
       <div className="flex w-40 shrink-0 items-center">
-        <BadgeStatus status="PROCESSADA" />
+        <BadgeStatus status={status} />
       </div>
       <div className="flex w-50 shrink-0 items-center gap-1.5">
-        <div className="flex items-center gap-1.5">
-          {tiposSinais.slice(0, 3).map((tipo, i) => (
-            <span
-              key={i}
-              className={clsx(
-                "size-2.5 shrink-0 rounded-[5px]",
-                SINAL_DOT_COLOR[tipo] ?? "bg-neutro-muted"
-              )}
-            />
-          ))}
-        </div>
-        <p className="whitespace-nowrap text-[11px] text-neutro-muted">
-          {tiposSinais.length} {tiposSinais.length === 1 ? "sinal" : "sinais"}
-        </p>
+        {tiposSinais.length > 0 ? (
+          <>
+            <div className="flex items-center gap-1.5">
+              {tiposSinais.slice(0, 3).map((tipo, i) => (
+                <span
+                  key={i}
+                  className={clsx(
+                    "size-2.5 shrink-0 rounded-[5px]",
+                    SINAL_DOT_COLOR[tipo] ?? "bg-neutro-muted"
+                  )}
+                />
+              ))}
+            </div>
+            <p className="whitespace-nowrap text-[11px] text-neutro-muted">
+              {tiposSinais.length} {tiposSinais.length === 1 ? "sinal" : "sinais"}
+            </p>
+          </>
+        ) : (
+          <p className="whitespace-nowrap text-corpo text-neutro-muted">—</p>
+        )}
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={rowClassName} data-node-id="59:646" data-name="Row/Reuniao">
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={rowClassName} data-node-id="59:646" data-name="Row/Reuniao">
+      {content}
     </div>
   );
 }
