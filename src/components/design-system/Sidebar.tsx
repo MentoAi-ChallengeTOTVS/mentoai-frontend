@@ -10,6 +10,7 @@ import {
   Bell,
   Sparkles,
   Star,
+  LogOut,
 } from "lucide-react";
 import type { PerfilUsuario } from "@/types/domain";
 
@@ -41,6 +42,11 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: "/usuarios", label: "Usuários", icon: Users },
 ];
 
+const PERFIL_LABEL: Record<PerfilUsuario, string> = {
+  EXECUTIVO_COMERCIAL: "Executivo Comercial",
+  DIRETOR_COMERCIAL: "Diretor Comercial",
+};
+
 export interface SidebarProps {
   /** Rota ativa (ex.: "/clientes") — controla o item destacado. */
   activeHref: string;
@@ -51,6 +57,14 @@ export interface SidebarProps {
   onOpenSearch?: () => void;
   /** Abre o modal "Avaliar o MentoAI" (item extra, fora do backlog oficial). */
   onOpenAvaliacao?: () => void;
+  /**
+   * Ação de logout (issue #60) — quando presente, mostra um ícone de sair
+   * no rodapé, ao lado das informações do usuário. Sem handler, o ícone
+   * não aparece (ex.: no showcase do design system, sem sessão real).
+   */
+  onLogout?: () => void;
+  /** Rota do "Meu Perfil" (issue #60) pra onde o bloco do usuário aponta. */
+  perfilHref?: string;
   className?: string;
 }
 
@@ -94,6 +108,8 @@ export function Sidebar({
   userName,
   onOpenSearch,
   onOpenAvaliacao,
+  onLogout,
+  perfilHref = "/perfil",
   className,
 }: SidebarProps) {
   const isDiretor = perfil === "DIRETOR_COMERCIAL";
@@ -179,22 +195,34 @@ export function Sidebar({
       </div>
 
       {/* sidebar-footer */}
-      <div className="flex w-full items-center gap-3 px-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-menta-clara text-sm font-medium text-navy">
-          {userName
-            .split(" ")
-            .slice(0, 2)
-            .map((n) => n[0])
-            .join("")}
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col items-start whitespace-nowrap">
-          <p className="w-full truncate text-legenda leading-legenda text-white">
-            {userName}
-          </p>
-          <p className="w-full truncate text-caption leading-caption text-sidebar-muted-2">
-            {isDiretor ? "Diretor Comercial" : "Executiva Comercial"}
-          </p>
-        </div>
+      <div className="flex w-full items-center gap-2 px-4">
+        <Link href={perfilHref} className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-menta-clara text-sm font-medium text-navy">
+            {userName
+              .split(" ")
+              .slice(0, 2)
+              .map((n) => n[0])
+              .join("")}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col items-start whitespace-nowrap">
+            <p className="w-full truncate text-legenda leading-legenda text-white">
+              {userName}
+            </p>
+            <p className="w-full truncate text-caption leading-caption text-sidebar-muted-2">
+              {PERFIL_LABEL[perfil]}
+            </p>
+          </div>
+        </Link>
+        {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label="Sair"
+            className="flex shrink-0 items-center justify-center rounded p-1.5 text-sidebar-muted-2 hover:text-white"
+          >
+            <LogOut className="size-4" />
+          </button>
+        )}
       </div>
     </div>
   );
