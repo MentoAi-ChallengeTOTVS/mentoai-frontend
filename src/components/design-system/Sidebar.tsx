@@ -101,7 +101,9 @@ export function Sidebar({
   return (
     <div
       className={clsx(
-        "flex h-[900px] w-[220px] flex-col justify-between bg-navy py-6",
+        // h-screen em vez do h-[900px] fixo do frame do Figma — numa página
+        // real a sidebar precisa esticar com a viewport, não travar em 900px.
+        "flex h-screen w-[220px] shrink-0 flex-col justify-between bg-navy py-6",
         className
       )}
       data-node-id={isDiretor ? "105:939" : "15:229"}

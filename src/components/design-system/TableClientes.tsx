@@ -7,7 +7,7 @@ import type { Cliente } from "@/types/domain";
  * Table/Row-Cliente (105:1235) — linha da tabela de Clientes, e os
  * companheiros `table-header`/`table-footer` do mesmo card (105:1229 /
  * 105:1281), incluídos aqui porque completam a tabela e são usados juntos
- * na tela Clientes (feature F01, Breno).
+ * na tela Clientes (feature F02, Breno — issue #64).
  *
  * Usei o frame "crm-clientes-mentoai" atual (105:1228), não o mais antigo
  * (8:52) que já está marcado como stale em
@@ -19,12 +19,24 @@ function formatData(iso: string) {
 }
 
 // ---------- Badge/Porte — chip neutro simples, não é um badge semântico de sinal ----------
+// Corrigido em 24/08/2026: a 1ª versão usava uma cor fixa (neutro-muted) pra
+// qualquer porte. Ao implementar a tela real (issue #64), `get_design_context`
+// no frame atual mostrou 3 cores diferentes por porte — Pequeno usa fundo
+// claro com texto escuro (contraste invertido), Médio/Grande usam fundo
+// escuro com texto branco. Corrigido pra bater com o Figma de verdade.
+
+const PORTE_ESTILO: Record<string, string> = {
+  Pequeno: "bg-neutro-border text-neutro-dark",
+  Médio: "bg-neutro-muted text-white",
+  Grande: "bg-neutro-dark text-white",
+};
 
 export function BadgePorte({ porte, className }: { porte: string; className?: string }) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center justify-center whitespace-nowrap rounded bg-neutro-muted px-2 py-1 text-caption leading-caption text-white",
+        "inline-flex items-center justify-center whitespace-nowrap rounded px-2 py-1 text-caption leading-caption",
+        PORTE_ESTILO[porte] ?? "bg-neutro-muted text-white",
         className
       )}
     >

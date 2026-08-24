@@ -49,14 +49,25 @@ Ao portar os Cards, dois hex apareceram soltos (sem variável do Figma vinculada
 
 O recorte que o `get_design_context` trouxe do Figma pra esse painel termina no campo Status, sem mostrar ações de rodapé (Cancelar/Salvar). Adicionei essas duas ações mesmo assim, no mesmo padrão do `Panel/Cadastro-Cliente` — um painel de edição real precisa de uma forma de salvar. Se a área abaixo do fold do Figma tiver algo diferente (outros botões, outra ordem), vale conferir no arquivo e ajustar.
 
+## Telas implementadas
+
+- **Clientes** (`src/app/(app)/clientes/page.tsx`) — issue [#64](https://github.com/MentoAi-ChallengeTOTVS/mentoai-api/issues/64) (F02). Listagem paginada (`RowCliente` + `TabelaClientesCabecalho`/`Rodape`), busca por nome/segmento, cadastro e edição via `PanelCadastroCliente` (drawer). Dados de `src/mocks/clientes.ts` (24 clientes fictícios) enquanto não há backend.
+  - **Gap documentado**: a issue pede "gerenciamento de status", mas `Cliente` no domínio (`src/types/domain.ts`) não tem campo de status/ativo — diferente de `Usuario`, que tem. Não inventei o campo; fica pendente de validação com o time.
+  - **Decisão temporária**: a ação "Ver detalhes" do Figma abre o painel de edição (reaproveitando `PanelCadastroCliente` em modo edição, via a nova prop `cliente`), porque a tela de detalhes dedicada (issue #65) ainda não existe. Quando #65 for implementada, revisar se "Ver detalhes" deve navegar pra lá em vez de abrir o drawer.
+- **Shell compartilhado** (`src/app/(app)/layout.tsx`) — Sidebar + wrapper de conteúdo, criado junto com a tela de Clientes pra ser reaproveitado pelas próximas telas autenticadas (Dashboard, Reuniões, Alertas, Copiloto, Usuários). `perfil`/`userName` fixos como o usuário de exemplo do Figma até a tela de Login (#60) existir.
+
+**Correções feitas no design system ao construir a tela real** (validam a tese de que só se vê certos gaps na hora de montar a tela, não no showcase isolado):
+- `BadgePorte` (`TableClientes.tsx`) usava uma cor fixa pra todos os portes; o Figma real tem 3 cores diferentes por porte (Pequeno/Médio/Grande) — corrigido.
+- `Sidebar` tinha `h-[900px]` fixo (herdado do tamanho do frame no Figma) — trocado por `h-screen`, senão a sidebar não esticava numa página real com viewport diferente de 900px.
+
 ## O que falta
 
-O **design system está 100% portado** — todos os componentes nomeados no Figma (`Badge/*`, `Row/*`, `Card/*`, `Panel/*`, `Item/*`, `Bubble/*`, `Star-Rating`, `Modal/Avaliar-Servico`, `Table/Row-Cliente`) têm equivalente em código, tipado com `src/types/domain.ts` e com build validado. Ver `claude/decisoes_tecnicas_stack.md` no projeto MentoAI (Claude) pro histórico completo de decisões tomadas durante essa etapa.
+O design system está 100% portado (ver seção acima) — todos os componentes nomeados no Figma têm equivalente em código, tipado com `src/types/domain.ts`.
 
 Falta:
 
-- As 13 telas do backlog (Login, Clientes, Nova Reunião, Detalhe da Reunião, Perfil do Cliente, Usuários, Dashboard, Alertas, Reuniões, Busca Global, Copiloto, Histórico de Análises, Sugestões Estratégicas) — que vão consumir os componentes já prontos.
-- Camada de dados: hoje não há chamada a API nenhuma — tudo precisa ser conectado ao backend Java quando ele estiver pronto (ou a mocks/fixtures tipados com `src/types/domain.ts` enquanto isso).
+- As outras 12 telas do backlog (Login, Nova Reunião, Detalhe da Reunião, Perfil do Cliente, Usuários, Dashboard, Alertas, Reuniões, Busca Global, Copiloto, Histórico de Análises, Sugestões Estratégicas) — que vão consumir os componentes já prontos.
+- Camada de dados: hoje não há chamada a API nenhuma — tudo precisa ser conectado ao backend Java quando ele estiver pronto (ou a mocks/fixtures tipados com `src/types/domain.ts` enquanto isso, como já feito em `src/mocks/clientes.ts`).
 
 ## Observação técnica
 

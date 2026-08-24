@@ -124,6 +124,9 @@ export interface NovoClienteInput {
   porte: string;
 }
 
+/** Mesmo formato de `NovoClienteInput`, com `id` quando é uma edição. */
+export type ClienteFormInput = NovoClienteInput & { id?: number };
+
 function SeletorPorte({
   value,
   onChange,
@@ -159,6 +162,14 @@ function SeletorPorte({
 }
 
 export function PanelCadastroCliente({
+  /**
+   * Quando presente, o painel abre em modo de edição (pré-preenchido, título
+   * "Editar cliente"). Reaproveitado pela tela de Clientes (issue #64) pra
+   * cobrir "cadastro/edição" enquanto a tela de detalhes dedicada (issue
+   * #65) não existe — ver decisão registrada em
+   * `claude/decisoes_tecnicas_stack.md`.
+   */
+  cliente,
   segmentoOpcoes = [
     "Construção Civil",
     "Tecnologia",
@@ -174,16 +185,17 @@ export function PanelCadastroCliente({
   onSubmit,
   className,
 }: {
+  cliente?: Cliente;
   segmentoOpcoes?: string[];
   porteOpcoes?: string[];
   onClose?: () => void;
   onCancel?: () => void;
-  onSubmit?: (data: NovoClienteInput) => void;
+  onSubmit?: (data: ClienteFormInput) => void;
   className?: string;
 }) {
-  const [nome, setNome] = useState("");
-  const [segmento, setSegmento] = useState(segmentoOpcoes[0] ?? "");
-  const [porte, setPorte] = useState(porteOpcoes[1] ?? porteOpcoes[0] ?? "");
+  const [nome, setNome] = useState(cliente?.nome ?? "");
+  const [segmento, setSegmento] = useState(cliente?.segmento ?? segmentoOpcoes[0] ?? "");
+  const [porte, setPorte] = useState(cliente?.porte ?? porteOpcoes[1] ?? porteOpcoes[0] ?? "");
 
   return (
     <div
@@ -194,7 +206,7 @@ export function PanelCadastroCliente({
       data-node-id="15:233"
       data-name="Panel/Cadastro-Cliente"
     >
-      <PanelHeader titulo="Cadastrar novo cliente" onClose={onClose} />
+      <PanelHeader titulo={cliente ? "Editar cliente" : "Cadastrar novo cliente"} onClose={onClose} />
       <div className="flex w-full flex-col items-start gap-4">
         <CampoTexto
           label="Nome / Razão Social"
@@ -215,7 +227,10 @@ export function PanelCadastroCliente({
       </div>
       <div className="flex w-full items-start gap-3 pt-3">
         <BotaoCancelar onClick={onCancel} />
-        <ButtonPrimary className="flex-1 justify-center" onClick={() => onSubmit?.({ nome, segmento, porte })}>
+        <ButtonPrimary
+          className="flex-1 justify-center"
+          onClick={() => onSubmit?.({ id: cliente?.id, nome, segmento, porte })}
+        >
           Salvar
         </ButtonPrimary>
       </div>
