@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #2c2c2a;
+}
+
+@theme inline {
+  /* Fontes */
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Cores primárias (Manual de Identidade Visual MentoAI) */
+  --color-menta: #1d9e75;
+  --color-menta-clara: #5dcaa5;
+  --color-menta-suave: #e1f5ee;
+  --color-navy: #0f2a45;
+
+  /* Escala neutra */
+  --color-neutro-dark: #2c2c2a;
+  --color-neutro-muted: #888780;
+  --color-neutro-border: #d3d1c7;
+  --color-neutro-background: #f1efe8;
+
+  /* Cores semânticas fixas de sinal — não usar fora do seu significado */
+  --color-sinal-oportunidade: #639922;
+  --color-sinal-risco-churn: #e24b4a;
+  --color-sinal-alerta: #ef9f27;
+  --color-sinal-concorrencia: #378add;
+  --color-gerado-ia: #7f77dd;
+
+  /* Tons usados só dentro da Sidebar (fundo navy escuro) — não são tokens
+     do Manual de Identidade, específicos deste componente no Figma. */
+  --color-sidebar-muted: #a0aec0;
+  --color-sidebar-muted-2: #6b7a87;
+
+  /* Base do app */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Estilos de texto (nome/tamanho/altura de linha do Design System no Figma) */
+  --text-titulo: 26px;
+  --text-titulo--line-height: 32px;
+  --text-subtitulo: 18px;
+  --text-subtitulo--line-height: 24px;
+  --text-corpo: 14px;
+  --text-corpo--line-height: 20px;
+  --text-legenda: 12px;
+  --text-legenda--line-height: 16px;
+  --text-caption: 11px;
+  --text-caption--line-height: 16px;
+}
+
+body {
+  background: var(--color-neutro-background);
+  color: var(--color-neutro-dark);
+}
