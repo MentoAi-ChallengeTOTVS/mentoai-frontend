@@ -77,6 +77,29 @@ O recorte que o `get_design_context` trouxe do Figma pra esse painel termina no 
 - `RowReuniao` (`Rows.tsx`) ganhou `status` (antes fixo em `"PROCESSADA"`) e `href` opcionais — com `href`, a row inteira vira link (usado na lista de Reuniões pra navegar pro Detalhe).
 - **Cuidado ao compor `Panel/Status-Envio` num flex row**: o componente já tem `w-full` na própria className base (pensado pra um wrapper de largura fixa em volta dele, não pra competir com `flex-1` de um irmão). Passar uma largura fixa (`w-[380px]`) direto no `className` do componente conflita com esse `w-full` interno e quebra o layout (o irmão flex-1 fica espremido a ~0px). Solução usada em `reunioes/nova/page.tsx`: envolver o componente num `<div className="w-[380px] shrink-0">` em vez de passar a largura pelo próprio `className`.
 
+## Fluxo de Git (decidido 24/08/2026)
+
+A `main` está protegida (branch protection rule no GitHub, exige Pull Request + 1 aprovação antes de merge) — ninguém, incluindo quem está aplicando as entregas geradas aqui, commita direto na `main`. Trabalho em dupla (Breno/Pedro) passa a seguir:
+
+```bash
+git checkout main
+git pull                                  # sincroniza antes de começar
+
+git checkout -b feature/70-71-reunioes    # padrão de nome abaixo
+
+# ... aplica as mudanças ...
+
+git add -A
+git commit -m "feat: ..."
+git push -u origin feature/70-71-reunioes
+```
+
+Depois é abrir o PR no GitHub (descrição com `Closes #70, #71` pra linkar automaticamente no board), esperar aprovação, mergear por lá, e só então `git checkout main && git pull` local pra sincronizar.
+
+**Padrão de nome de branch**: `tipo/numero-da-issue-slug-curto` — `tipo` é `feature` (a maioria), `fix`, `chore` ou `docs`; `numero-da-issue` sem o `#` (dois números juntos quando a branch cobre issues relacionadas, ex. `70-71`); `slug-curto` é o nome da tela/funcionalidade, não a issue inteira. Exemplos: `feature/65-detalhe-cliente`, `feature/86-visao-360`, `fix/sidebar-largura`.
+
+A partir de agora, as instruções de git que acompanham cada entrega já vêm nesse formato (branch + PR), não mais como commit direto na `main`.
+
 ## O que falta
 
 O design system está 100% portado (ver seção acima) — todos os componentes nomeados no Figma têm equivalente em código, tipado com `src/types/domain.ts`.
