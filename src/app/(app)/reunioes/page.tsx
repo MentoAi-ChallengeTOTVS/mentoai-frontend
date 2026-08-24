@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Plus, Hourglass } from "lucide-react";
 import { ButtonPrimary } from "@/components/design-system/Button";
 import { FilterBar, FilterSelect } from "@/components/design-system/FilterBar";
 import { RowReuniao } from "@/components/design-system/Rows";
@@ -22,9 +23,20 @@ import { MOCK_REUNIOES, MOCK_ANALISES, tiposSinaisDaReuniao } from "@/mocks/reun
  * Filtros de Cliente/Período aplicados sobre os dados mockados no
  * client-side; "Status" e a busca por nome de cliente também. Sem
  * dependência de backend — mesmo espírito de `clientes/page.tsx`.
+ *
+ * Header ganhou o link "Fila de processamento" (24/08/2026) pra `/reunioes/
+ * fila` — issue #80 (F04). Sem frame no Figma pra esse link nem pra
+ * dependência da tela em si; ver nota completa em `reunioes/fila/page.tsx`.
  */
 
 const TAMANHO_PAGINA = 8; // bate com o "Exibindo 8 de 24 reuniões" do Figma
+
+// Contagem estática (a partir do mock) só pro badge do link "Fila de
+// processamento" — a simulação de progresso de verdade vive em
+// `/reunioes/fila`, que tem seu próprio estado local (ver nota lá).
+const EM_PROCESSAMENTO = Object.values(MOCK_ANALISES).filter(
+  (a) => a.statusProcessamento === "PENDENTE" || a.statusProcessamento === "PROCESSANDO"
+).length;
 
 const OPCAO_TODOS_CLIENTES = "Todos os clientes";
 const OPCOES_STATUS = ["Todos", "Pendente", "Processando", "Processada", "Erro"] as const;
@@ -94,12 +106,26 @@ export default function ReunioesPage() {
             Gerencie as reuniões comerciais e acompanhe as análises de IA
           </p>
         </div>
-        <ButtonPrimary
-          icon={<Plus className="size-4" />}
-          onClick={() => router.push("/reunioes/nova")}
-        >
-          Nova reunião
-        </ButtonPrimary>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/reunioes/fila"
+            className="flex h-10 items-center gap-2 rounded-md border border-neutro-border bg-white px-4 text-corpo font-medium text-navy transition-colors hover:bg-neutro-background"
+          >
+            <Hourglass className="size-4 text-neutro-muted" />
+            Fila de processamento
+            {EM_PROCESSAMENTO > 0 && (
+              <span className="flex min-w-[20px] items-center justify-center rounded-full bg-menta px-1.5 py-0.5 text-[11px] leading-none text-white">
+                {EM_PROCESSAMENTO}
+              </span>
+            )}
+          </Link>
+          <ButtonPrimary
+            icon={<Plus className="size-4" />}
+            onClick={() => router.push("/reunioes/nova")}
+          >
+            Nova reunião
+          </ButtonPrimary>
+        </div>
       </div>
 
       <FilterBar
