@@ -31,6 +31,25 @@ Abra `http://localhost:3000/design-system` pra ver a vitrine dos componentes já
 
 Todos os componentes com interação (`onClick`, `onChange`) são Client Components (`"use client"`) — necessário no App Router do Next.js pra qualquer handler de evento funcionar.
 
+## Camada de serviços — preparado pro backend (24/08/2026)
+
+Todas as telas passaram por uma revisão dedicada pra isolar o acesso a dado mockado atrás de uma camada de serviços (`src/services/*.service.ts`), um módulo por bounded context:
+
+- **`clientes.service.ts`** — `listarClientes`, `buscarClientePorId`, `criarCliente`, `atualizarCliente`.
+- **`usuarios.service.ts`** — `listarUsuarios`, `criarUsuario`, `atualizarUsuario`.
+- **`reunioes.service.ts`** — `listarReunioesComStatus`, `contarEmProcessamento`, `buscarDetalheReuniao`, `listarFilaProcessamento`, `enviarTranscricao`.
+- **`perfilCliente.service.ts`** — `buscarPerfilCliente` (agregado pra Visão 360°), `gerarSugestoesEstrategicas`.
+- **`auth.service.ts`** — `autenticar` (usado por `AuthProvider.login()` em `src/lib/auth.tsx`).
+
+Cada função é `async` e hoje só envolve os mocks de `src/mocks/*.ts` — nenhuma tela importa `@/mocks/*` diretamente mais (conferido via grep antes de fechar essa revisão). Quando o backend Java existir, **só o corpo dessas funções muda** (de `return MOCK_X` pra um `fetch` de verdade contra a API) — nenhuma tela, componente ou tipo precisa mudar, porque a assinatura (parâmetros, formato de retorno, `Promise`) já é a mesma que uma chamada real teria. Cada função tem em JSDoc o endpoint REST esperado (ex.: `GET /api/clientes/{id}`), como um contrato informal pro time de backend.
+
+Duas decisões de formato valem registrar:
+
+- Algumas funções devolvem um "view model" já combinado (ex.: `listarReunioesComStatus` devolve reunião + status + tipos de sinal juntos, `buscarDetalheReuniao` devolve reunião + análise + sinais numa chamada só) em vez de forçar a tela a fazer N chamadas separadas e juntar o resultado — é razoável esperar que os endpoints reais também devolvam o dado assim combinado, do jeito que qualquer API REST bem desenhada faria pra uma tela de listagem/detalhe.
+- Em `reunioes.service.ts` e `SugestoesEstrategicas.tsx`, o `setTimeout` que anima Pendente → Processando → Processada (Nova Reunião) e o skeleton de carregamento (Sugestões Estratégicas) continuam no client, de propósito — são simulações de UX de um processo que no mundo real seria assíncrono de verdade (fila com polling/push, ou uma chamada de IA que demora), não uma resposta única e instantânea. Só a "borda" da chamada (o que o `POST`/`GET` devolveria no dia 1) virou função de serviço.
+
+Consequência prática de arquitetura: toda tela com listagem/formulário que antes era só Client Component (`"use client"` no topo do arquivo) virou um par **Server Component (`page.tsx`, busca o dado inicial via `service`) + Client Component (`*Client.tsx` / `*Form.tsx`, mantém a interatividade)** — mesmo padrão que já existia em Perfil do Cliente e Detalhe da Reunião desde antes desta revisão, agora aplicado em todas as telas: `clientes/page.tsx` + `ClientesPageClient.tsx`, `usuarios/page.tsx` + `UsuariosPageClient.tsx`, `reunioes/page.tsx` + `ReunioesPageClient.tsx`, `reunioes/nova/page.tsx` + `NovaReuniaoForm.tsx`, `reunioes/fila/page.tsx` + `FilaProcessamentoClient.tsx`.
+
 ## Nota sobre ícones e imagens
 
 O sandbox onde esse scaffold foi gerado não tem acesso de rede pra baixar os assets exportados do Figma (ícones em SVG, logo, foto de avatar) — as URLs que o Figma MCP retorna expiram em ~7 dias e não puderam ser baixadas aqui.
@@ -120,8 +139,8 @@ O design system está 100% portado (ver seção acima) — todos os componentes 
 
 Falta:
 
-- As outras 4 telas do backlog do Breno e do Pedro (Dashboard, Alertas, Busca Global, Copiloto — Histórico de Análises já está coberto dentro do Detalhe da Reunião, Perfil do Cliente/Visão 360° e Fila de Processamento já estão prontos) — que vão consumir os componentes já prontos. Sugestões Estratégicas (`#101`) provavelmente já está coberta pelo accordion dentro do Perfil do Cliente — vale confirmar o escopo exato da issue antes de tratar como pendente.
-- Camada de dados: hoje não há chamada a API nenhuma — tudo precisa ser conectado ao backend Java quando ele estiver pronto (ou a mocks/fixtures tipados com `src/types/domain.ts` enquanto isso, como já feito em `src/mocks/clientes.ts`, `src/mocks/usuarios.ts`, `src/mocks/reunioes.ts` e `src/mocks/perfilCliente.ts`).
+- As 4 telas do backlog do Pedro (Alertas, Dashboard Executivo, Busca Global, Copiloto — fora do escopo do Breno) — que vão consumir os componentes já prontos. Do lado do Breno, todas as issues atribuídas (`#60`, `#61`, `#64`, `#65`, `#70`, `#71`, `#86`, `#80`, `#101`) estão implementadas.
+- Camada de dados: **isolada atrás de `src/services/*.service.ts` desde 24/08/2026** (ver seção "Camada de serviços" acima) — hoje cada função de serviço só envolve os mocks tipados com `src/types/domain.ts` (`src/mocks/clientes.ts`, `usuarios.ts`, `reunioes.ts`, `perfilCliente.ts`), mas a assinatura já é a mesma que uma chamada real à API do backend Java teria. Conectar ao backend de verdade deve significar só trocar o corpo dessas funções, sem tocar em tela nenhuma.
 
 ## Observação técnica
 

@@ -8,7 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { PerfilUsuario, Usuario } from "@/types/domain";
+import type { Usuario } from "@/types/domain";
+import { autenticar } from "@/services/auth.service";
 
 /**
  * Autenticação — issue #60 ("Estado de sessão"). Não existe backend de
@@ -39,15 +40,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function nomeFromEmail(email: string) {
-  const usuario = email.split("@")[0] ?? "Usuário";
-  return usuario
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((parte) => parte[0].toUpperCase() + parte.slice(1))
-    .join(" ");
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -64,25 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, senha: string) => {
-    if (!email.trim() || !senha.trim()) {
-      return { ok: false as const, erro: "Informe e-mail e senha." };
+    let novoUsuario: Usuario;
+    try {
+      novoUsuario = await autenticar(email, senha);
+    } catch (err) {
+      const erro = err instanceof Error ? err.message : "Não foi possível autenticar.";
+      return { ok: false as const, erro };
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const perfil: PerfilUsuario = email.toLowerCase().includes("diretor")
-      ? "DIRETOR_COMERCIAL"
-      : "EXECUTIVO_COMERCIAL";
-    const agora = new Date().toISOString();
-    const novoUsuario: Usuario = {
-      id: 1,
-      nome: nomeFromEmail(email),
-      email,
-      perfil,
-      ativo: true,
-      criacao: agora,
-      atualizacao: agora,
-    };
 
     setUsuario(novoUsuario);
     try {

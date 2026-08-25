@@ -5,9 +5,9 @@ import { ChevronDown, ChevronUp, Loader2, Sparkles } from "lucide-react";
 import { BadgeGeradoPorIA } from "@/components/design-system/Badges";
 import { CardSugestaoEstrategica } from "@/components/design-system/Cards";
 import {
-  gerarSugestoesEstrategicasDoCliente,
+  gerarSugestoesEstrategicas,
   type SugestaoEstrategica,
-} from "@/mocks/perfilCliente";
+} from "@/services/perfilCliente.service";
 
 /**
  * Seção "Sugestões Estratégicas" da tela Perfil do Cliente
@@ -21,12 +21,14 @@ import {
  * três: botão "Gerar sugestões"/"Atualizar sugestões", skeleton de
  * carregamento (`carregando`) e estado vazio explícito antes da 1ª geração
  * (`itens === null`, distinto de já ter gerado e não ter achado nada — o
- * fallback de `gerarSugestoesEstrategicasDoCliente` sempre devolve pelo
- * menos 1 item, então "vazio" aqui é só o estado pré-geração).
+ * fallback do serviço sempre devolve pelo menos 1 item, então "vazio" aqui
+ * é só o estado pré-geração).
  *
- * `handleGerar` simula uma chamada assíncrona real (sem backend de IA
- * ainda) com um `setTimeout` — mesmo padrão de "Nova Reunião"
- * (`reunioes/nova/page.tsx`), incluindo o cleanup do timer no unmount.
+ * `handleGerar` chama `perfilClienteService.gerarSugestoesEstrategicas`
+ * (POST /clientes/{id}/sugestoes-estrategicas no mundo real) atrás de um
+ * `setTimeout` de 1,3s só pra dar uma sensação de carregamento visível —
+ * mesmo padrão de "Nova Reunião" (`reunioes/nova/page.tsx`), incluindo o
+ * cleanup do timer no unmount.
  *
  * Único trecho da tela com estado próprio, por isso extraído num Client
  * Component à parte em vez de forçar "use client" na página inteira.
@@ -55,8 +57,14 @@ export function SugestoesEstrategicas({
   function handleGerar() {
     setCarregando(true);
     setAberto(true);
-    timerRef.current = setTimeout(() => {
-      setItens(gerarSugestoesEstrategicasDoCliente(clienteId, nomeCliente));
+    // O delay de 1,3s aqui é só UX simulando o tempo de uma chamada de IA —
+    // a chamada em si (`gerarSugestoesEstrategicas`) já é assíncrona (via
+    // `perfilClienteService`, POST /clientes/{id}/sugestoes-estrategicas no
+    // mundo real), então quando o backend existir o delay artificial some
+    // sozinho (o `await` real já demora o tempo que precisar).
+    timerRef.current = setTimeout(async () => {
+      const sugestoes = await gerarSugestoesEstrategicas(clienteId, nomeCliente);
+      setItens(sugestoes);
       setCarregando(false);
     }, 1300);
   }

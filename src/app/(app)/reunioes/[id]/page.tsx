@@ -7,7 +7,7 @@ import {
   CardSinaisComerciais,
   CardHistoricoAnalises,
 } from "@/components/design-system/Cards";
-import { MOCK_REUNIOES, MOCK_ANALISES, MOCK_SINAIS } from "@/mocks/reunioes";
+import { buscarDetalheReuniao } from "@/services/reunioes.service";
 
 /**
  * Tela Detalhe da Reunião (Figma: frame "detalhe-reuniao-mentoai", 27:155) —
@@ -29,8 +29,9 @@ import { MOCK_REUNIOES, MOCK_ANALISES, MOCK_SINAIS } from "@/mocks/reunioes";
  * `resumoExecutivo`/sinais depois de processada) — pros outros 3 estados,
  * a página mostra um card de estado em vez de conteúdo vazio.
  *
- * Server Component (sem "use client") — a página só lê dados mockados de
- * forma síncrona, sem interatividade própria; `params` é `Promise` (padrão
+ * Server Component (sem "use client") — a página busca os dados via
+ * `reunioesService.buscarDetalheReuniao(id)` (async, já pronto pra virar
+ * `fetch` real), sem interatividade própria; `params` é `Promise` (padrão
  * do App Router nesta versão do Next.js).
  */
 
@@ -45,12 +46,11 @@ export default async function DetalheReuniaoPage({
 }) {
   const { id } = await params;
   const reuniaoId = Number(id);
-  const reuniao = MOCK_REUNIOES.find((r) => r.id === reuniaoId);
+  const detalhe = await buscarDetalheReuniao(reuniaoId);
 
-  if (!reuniao) notFound();
+  if (!detalhe) notFound();
 
-  const analise = MOCK_ANALISES[reuniaoId];
-  const sinais = MOCK_SINAIS[reuniaoId] ?? [];
+  const { reuniao, analise, sinais } = detalhe;
   const status = analise?.statusProcessamento ?? "PENDENTE";
 
   return (
