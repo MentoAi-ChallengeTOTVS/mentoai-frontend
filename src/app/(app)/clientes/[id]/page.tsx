@@ -5,16 +5,7 @@ import { BadgePorte } from "@/components/design-system/TableClientes";
 import { BadgeGeradoPorIA } from "@/components/design-system/Badges";
 import { CardSinaisRisco, CardOportunidades } from "@/components/design-system/Cards";
 import { ItemTimelineReuniao } from "@/components/design-system/Timeline";
-import { MOCK_CLIENTES } from "@/mocks/clientes";
-import { MOCK_ANALISES } from "@/mocks/reunioes";
-import {
-  reunioesDoCliente,
-  resumoTimelineDaReuniao,
-  sinaisRiscoDoCliente,
-  oportunidadesDoCliente,
-  resumoEstrategicoDoCliente,
-  sugestoesJaGeradasDoCliente,
-} from "@/mocks/perfilCliente";
+import { buscarPerfilCliente } from "@/services/perfilCliente.service";
 import { SugestoesEstrategicas } from "./SugestoesEstrategicas";
 
 /**
@@ -24,19 +15,19 @@ import { SugestoesEstrategicas } from "./SugestoesEstrategicas";
  * Cliente — histórico + IA"). As duas issues mapeiam pro mesmo frame no
  * Figma, então viraram uma única página aqui.
  *
- * Server Component (sem "use client") — a página só lê/deriva dados
- * mockados de forma síncrona; a única parte interativa (accordion de
- * Sugestões Estratégicas, com ação de gerar/atualizar — issue #101) foi
- * isolada em `SugestoesEstrategicas.tsx`. `params` é `Promise`, mesmo
- * padrão de `reunioes/[id]/page.tsx`.
+ * Server Component (sem "use client") — a página só lê/deriva dados de
+ * forma assíncrona; a única parte interativa (accordion de Sugestões
+ * Estratégicas, com ação de gerar/atualizar — issue #101) foi isolada em
+ * `SugestoesEstrategicas.tsx`. `params` é `Promise`, mesmo padrão de
+ * `reunioes/[id]/page.tsx`.
  *
  * "Iniciar conversa no Copiloto" aponta pra `/copiloto`, tela do Copiloto
  * (feature F04) que ainda não existe nesta base — fora do escopo do Breno.
  *
- * Agregações (`Sinais de Risco`, `Oportunidades`, resumo/sugestões
- * estratégicas) vêm de `src/mocks/perfilCliente.ts` — ver as notas lá sobre
- * a diferença entre os números reais derivados do mock e os números
- * ilustrativos do Figma.
+ * Todos os dados vêm de uma chamada só a `perfilClienteService.
+ * buscarPerfilCliente(clienteId)` — ver as notas lá sobre a diferença entre
+ * os números reais derivados do mock e os números ilustrativos do Figma, e
+ * sobre o gap de domínio de "Resumo Estratégico"/"Sugestões Estratégicas".
  */
 
 export default async function PerfilClientePage({
@@ -46,13 +37,11 @@ export default async function PerfilClientePage({
 }) {
   const { id } = await params;
   const clienteId = Number(id);
-  const cliente = MOCK_CLIENTES.find((c) => c.id === clienteId);
+  const perfil = await buscarPerfilCliente(clienteId);
 
-  if (!cliente) notFound();
+  if (!perfil) notFound();
 
-  const reunioes = reunioesDoCliente(clienteId);
-  const riscos = sinaisRiscoDoCliente(clienteId);
-  const oportunidades = oportunidadesDoCliente(clienteId);
+  const { cliente, timeline, riscos, oportunidades, resumoEstrategico, sugestoesIniciais } = perfil;
 
   return (
     <>
@@ -80,7 +69,7 @@ export default async function PerfilClientePage({
         <div className="flex flex-1 flex-col items-start gap-5">
           <p className="text-subtitulo font-medium text-neutro-dark">Linha do Tempo de Reuniões</p>
 
-          {reunioes.length === 0 ? (
+          {timeline.length === 0 ? (
             <div className="flex w-full items-center rounded-lg border border-dashed border-neutro-border bg-white p-6">
               <p className="text-corpo text-neutro-muted">
                 Esse cliente ainda não tem nenhuma reunião registrada.
@@ -88,19 +77,19 @@ export default async function PerfilClientePage({
             </div>
           ) : (
             <div className="flex w-full flex-col items-start">
-              {reunioes.map((reuniao, i) => (
+              {timeline.map((item, i) => (
                 <ItemTimelineReuniao
-                  key={reuniao.id}
-                  reuniao={reuniao}
-                  resumo={resumoTimelineDaReuniao(reuniao.id)}
-                  status={MOCK_ANALISES[reuniao.id]?.statusProcessamento ?? "PENDENTE"}
-                  ultimo={i === reunioes.length - 1}
+                  key={item.reuniao.id}
+                  reuniao={item.reuniao}
+                  resumo={item.resumo}
+                  status={item.status}
+                  ultimo={i === timeline.length - 1}
                 />
               ))}
             </div>
           )}
 
-          {reunioes.length > 0 && (
+          {timeline.length > 0 && (
             <div className="flex w-full items-start pl-8">
               <Link href="/reunioes" className="text-corpo font-medium text-menta">
                 Ver todas as reuniões
@@ -124,9 +113,7 @@ export default async function PerfilClientePage({
               <p className="text-subtitulo font-medium text-neutro-dark">Resumo Estratégico</p>
               <BadgeGeradoPorIA />
             </div>
-            <p className="w-full text-corpo text-neutro-dark">
-              {resumoEstrategicoDoCliente(clienteId, cliente.nome)}
-            </p>
+            <p className="w-full text-corpo text-neutro-dark">{resumoEstrategico}</p>
           </div>
 
           <Link
@@ -142,7 +129,7 @@ export default async function PerfilClientePage({
       <SugestoesEstrategicas
         clienteId={clienteId}
         nomeCliente={cliente.nome}
-        itensIniciais={sugestoesJaGeradasDoCliente(clienteId)}
+        itensIniciais={sugestoesIniciais}
       />
     </>
   );
