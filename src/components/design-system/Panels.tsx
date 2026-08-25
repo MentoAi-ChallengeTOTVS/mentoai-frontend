@@ -201,7 +201,7 @@ export function PanelCadastroCliente({
   return (
     <div
       className={clsx(
-        "flex h-full w-full flex-col items-start gap-6 border-l border-neutro-border bg-white p-6 shadow-[-4px_0px_8px_rgba(0,0,0,0.1)]",
+        "flex h-full w-full flex-col items-start gap-6 overflow-y-auto border-l border-neutro-border bg-white p-6 shadow-[-4px_0px_8px_rgba(0,0,0,0.1)]",
         className
       )}
       data-node-id="15:233"
@@ -378,7 +378,10 @@ export function PanelBoasVindasLogin({
         </p>
       </div>
       <p className="w-full text-[22px] leading-[32px] text-white">{tagline}</p>
-      <p className="whitespace-nowrap text-[12px] leading-4 font-medium uppercase tracking-[0.12px] text-menta-clara">
+      {/* Responsivo (25/08/2026): nowrap solto causava overflow horizontal em
+          telas bem estreitas (<360px) — deixa quebrar linha por padrão, só
+          trava numa linha só a partir de sm onde já cabe. */}
+      <p className="w-full text-[12px] leading-4 font-medium uppercase tracking-[0.12px] text-menta-clara sm:whitespace-nowrap">
         {caption}
       </p>
     </div>
@@ -469,7 +472,7 @@ export function PanelEditarUsuario({
   return (
     <div
       className={clsx(
-        "flex h-full w-full flex-col items-start gap-6 border-l border-neutro-border bg-white p-6 shadow-[-4px_0px_8px_rgba(0,0,0,0.1)]",
+        "flex h-full w-full flex-col items-start gap-6 overflow-y-auto border-l border-neutro-border bg-white p-6 shadow-[-4px_0px_8px_rgba(0,0,0,0.1)]",
         className
       )}
       data-node-id="91:1167"

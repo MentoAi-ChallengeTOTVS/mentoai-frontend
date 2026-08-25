@@ -55,9 +55,9 @@ export default async function DetalheReuniaoPage({
 
   return (
     <>
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col items-start gap-2">
-          <div className="flex items-center gap-1.5 text-legenda leading-legenda text-neutro-muted">
+          <div className="flex flex-wrap items-center gap-1.5 text-legenda leading-legenda text-neutro-muted">
             <Link href="/reunioes" className="hover:text-navy">
               Reuniões
             </Link>
@@ -69,7 +69,7 @@ export default async function DetalheReuniaoPage({
           <p className="text-titulo leading-titulo font-medium text-navy">
             Reunião — {reuniao.cliente.nome}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <div className="flex items-center gap-1.5 text-legenda leading-legenda text-neutro-muted">
               <Calendar className="size-3.5" />
               <span>

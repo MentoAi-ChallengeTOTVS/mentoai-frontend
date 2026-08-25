@@ -62,34 +62,62 @@ export function RowCliente({
   onEditar?: (cliente: Cliente) => void;
   className?: string;
 }) {
+  const bg = striped ? "bg-[#f8fafc]" : "bg-white";
+
   return (
     <div
-      className={clsx(
-        "flex w-full items-center gap-4 border-b border-neutro-border px-6 py-4",
-        striped ? "bg-[#f8fafc]" : "bg-white",
-        className
-      )}
+      className={clsx("w-full border-b border-neutro-border", bg, className)}
       data-node-id="105:1235"
       data-name="Table/Row-Cliente"
     >
-      <p className="flex-1 truncate text-corpo text-navy">{cliente.nome}</p>
-      <p className="w-50 shrink-0 truncate text-corpo text-sidebar-muted-2">{cliente.segmento}</p>
-      <div className="flex w-30 shrink-0 items-center">
-        <BadgePorte porte={cliente.porte} />
+      {/* Linha de tabela — telas lg+, layout original do Figma. */}
+      <div className="hidden w-full items-center gap-4 px-6 py-4 lg:flex">
+        <p className="flex-1 truncate text-corpo text-navy">{cliente.nome}</p>
+        <p className="w-50 shrink-0 truncate text-corpo text-sidebar-muted-2">{cliente.segmento}</p>
+        <div className="flex w-30 shrink-0 items-center">
+          <BadgePorte porte={cliente.porte} />
+        </div>
+        <p className="w-40 shrink-0 text-corpo text-sidebar-muted-2">{formatData(cliente.criacao)}</p>
+        <div className="flex w-40 shrink-0 items-center gap-3">
+          <Link href={`/clientes/${cliente.id}`} className="text-corpo text-menta">
+            Ver detalhes
+          </Link>
+          <button
+            type="button"
+            onClick={() => onEditar?.(cliente)}
+            aria-label="Editar cliente"
+            className="flex items-center justify-center rounded bg-neutro-background p-1.5"
+          >
+            <Pencil className="size-3.5 text-neutro-dark" />
+          </button>
+        </div>
       </div>
-      <p className="w-40 shrink-0 text-corpo text-sidebar-muted-2">{formatData(cliente.criacao)}</p>
-      <div className="flex w-40 shrink-0 items-center gap-3">
-        <Link href={`/clientes/${cliente.id}`} className="text-corpo text-menta">
-          Ver detalhes
-        </Link>
-        <button
-          type="button"
-          onClick={() => onEditar?.(cliente)}
-          aria-label="Editar cliente"
-          className="flex items-center justify-center rounded bg-neutro-background p-1.5"
-        >
-          <Pencil className="size-3.5 text-neutro-dark" />
-        </button>
+
+      {/* Card empilhado — abaixo de lg, a tabela vira uma lista de cards (responsivo, 25/08/2026). */}
+      <div className="flex w-full flex-col items-start gap-2.5 px-4 py-4 lg:hidden">
+        <div className="flex w-full items-start justify-between gap-3">
+          <p className="min-w-0 flex-1 truncate text-corpo font-medium text-navy">{cliente.nome}</p>
+          <BadgePorte porte={cliente.porte} className="shrink-0" />
+        </div>
+        <p className="text-caption leading-caption text-sidebar-muted-2">{cliente.segmento}</p>
+        <div className="flex w-full items-center justify-between gap-3 pt-1">
+          <p className="text-legenda leading-legenda text-sidebar-muted-2">
+            Cadastrado em {formatData(cliente.criacao)}
+          </p>
+          <div className="flex shrink-0 items-center gap-3">
+            <Link href={`/clientes/${cliente.id}`} className="text-legenda font-medium text-menta">
+              Ver detalhes
+            </Link>
+            <button
+              type="button"
+              onClick={() => onEditar?.(cliente)}
+              aria-label="Editar cliente"
+              className="flex items-center justify-center rounded bg-neutro-background p-1.5"
+            >
+              <Pencil className="size-3.5 text-neutro-dark" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -101,7 +129,9 @@ export function TabelaClientesCabecalho({ className }: { className?: string }) {
   return (
     <div
       className={clsx(
-        "flex w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda text-sidebar-muted-2",
+        // Responsivo (25/08/2026): cabeçalho da tabela só faz sentido no
+        // layout de colunas fixas de lg+ — some quando RowCliente vira card.
+        "hidden w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda text-sidebar-muted-2 lg:flex",
         className
       )}
       data-node-id="105:1229"
@@ -137,7 +167,10 @@ export function TabelaClientesRodape({
 }) {
   return (
     <div
-      className={clsx("flex w-full items-center justify-between bg-white px-6 py-3.5", className)}
+      className={clsx(
+        "flex w-full flex-col items-stretch gap-3 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6",
+        className
+      )}
       data-node-id="105:1281"
       data-name="table-footer"
     >

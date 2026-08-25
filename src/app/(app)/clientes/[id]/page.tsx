@@ -55,7 +55,7 @@ export default async function PerfilClientePage({
         </div>
         <div className="flex flex-col items-start gap-1">
           <p className="text-titulo leading-titulo font-medium text-navy">{cliente.nome}</p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <p className="text-legenda leading-legenda text-neutro-muted">
               Segmento: <span className="font-medium text-neutro-dark">{cliente.segmento}</span>
             </p>
@@ -65,8 +65,8 @@ export default async function PerfilClientePage({
         </div>
       </div>
 
-      <div className="flex w-full items-start gap-6">
-        <div className="flex flex-1 flex-col items-start gap-5">
+      <div className="flex w-full flex-col items-start gap-6 lg:flex-row">
+        <div className="flex w-full flex-1 flex-col items-start gap-5">
           <p className="text-subtitulo font-medium text-neutro-dark">Linha do Tempo de Reuniões</p>
 
           {timeline.length === 0 ? (
@@ -98,7 +98,7 @@ export default async function PerfilClientePage({
           )}
         </div>
 
-        <div className="flex w-[480px] shrink-0 flex-col items-start gap-4">
+        <div className="flex w-full flex-col items-start gap-4 lg:w-[480px] lg:shrink-0">
           <CardSinaisRisco
             quantidade={riscos.length}
             itens={riscos.map((s) => s.descricao)}

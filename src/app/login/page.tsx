@@ -44,14 +44,18 @@ export default function LoginPage() {
   if (carregando || usuario) return null;
 
   return (
-    <div className="flex min-h-screen w-full items-stretch" data-node-id="65:501" data-name="login-mentoai">
-      <div className="flex flex-1 flex-col items-start justify-center gap-10 bg-navy p-20">
+    <div
+      className="flex min-h-screen w-full flex-col items-stretch lg:flex-row"
+      data-node-id="65:501"
+      data-name="login-mentoai"
+    >
+      <div className="flex flex-1 flex-col items-start justify-center gap-6 bg-navy p-6 sm:p-10 lg:gap-10 lg:p-20">
         <PanelBoasVindasLogin />
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-neutro-background p-10">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-neutro-background p-6 py-10 sm:p-10">
         <CardLoginForm onSubmit={handleSubmit} loading={enviando} className="w-full max-w-[420px]" />
         {erro && <p className="text-caption leading-caption text-sinal-risco-churn">{erro}</p>}
-        <p className="text-caption leading-caption text-neutro-muted">
+        <p className="max-w-[420px] text-center text-caption leading-caption text-neutro-muted">
           Ambiente de demonstração — qualquer e-mail e senha entram. Use um e-mail com
           &quot;diretor&quot; (ex.: diretor@mentoai.com) pra ver a sidebar com a seção Administração.
         </p>

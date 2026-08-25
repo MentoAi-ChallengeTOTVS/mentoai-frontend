@@ -57,20 +57,25 @@ export function UsuariosPageClient({ usuariosIniciais }: { usuariosIniciais: Usu
 
   return (
     <>
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col items-start gap-1">
           <p className="text-titulo leading-titulo font-medium text-navy">Gerenciamento de Usuários</p>
           <p className="text-legenda leading-legenda text-sidebar-muted-2">
             Gerencie os acessos da sua equipe
           </p>
         </div>
-        <ButtonPrimary icon={<Plus className="size-4" />} onClick={() => setPainelAberto("novo")}>
+        <ButtonPrimary
+          icon={<Plus className="size-4" />}
+          onClick={() => setPainelAberto("novo")}
+          className="w-full justify-center lg:w-auto"
+        >
           Novo usuário
         </ButtonPrimary>
       </div>
 
       <div className="flex w-full flex-col items-start overflow-hidden rounded-lg border border-neutro-border bg-white">
-        <div className="flex w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda leading-legenda text-sidebar-muted-2">
+        {/* Cabeçalho — só faz sentido no layout de colunas de lg+; abaixo disso RowUsuario vira card. */}
+        <div className="hidden w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda leading-legenda text-sidebar-muted-2 lg:flex">
           <p className="flex-1">Nome</p>
           <p className="w-60 shrink-0">E-mail</p>
           <p className="w-45 shrink-0">Perfil de Acesso</p>
@@ -85,7 +90,7 @@ export function UsuariosPageClient({ usuariosIniciais }: { usuariosIniciais: Usu
             className={i % 2 === 0 ? "bg-[#f8fafc]" : "bg-white"}
           />
         ))}
-        <div className="flex w-full items-center justify-between bg-white px-6 py-3.5">
+        <div className="flex w-full flex-col items-stretch gap-3 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="text-legenda leading-legenda text-neutro-muted">
             Exibindo {usuariosDaPagina.length} de {usuarios.length} usuários
           </p>
@@ -115,7 +120,7 @@ export function UsuariosPageClient({ usuariosIniciais }: { usuariosIniciais: Usu
           className="fixed inset-0 z-40 flex justify-end bg-black/30"
           onClick={() => setPainelAberto(null)}
         >
-          <div className="h-full w-[420px]" onClick={(e) => e.stopPropagation()}>
+          <div className="h-full w-full max-w-[420px]" onClick={(e) => e.stopPropagation()}>
             <PanelEditarUsuario
               usuario={usuarioEmEdicao}
               onClose={() => setPainelAberto(null)}

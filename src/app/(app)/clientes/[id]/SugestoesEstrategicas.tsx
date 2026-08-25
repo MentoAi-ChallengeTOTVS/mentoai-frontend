@@ -73,7 +73,7 @@ export function SugestoesEstrategicas({
 
   return (
     <div className="flex w-full flex-col items-start gap-4" data-node-id="126:1240">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <p className="text-subtitulo font-medium text-neutro-dark">
             Sugestões Estratégicas{temItens ? ` (${itens.length})` : ""}
@@ -111,11 +111,11 @@ export function SugestoesEstrategicas({
       </div>
 
       {carregando ? (
-        <div className="flex w-full items-start gap-5">
+        <div className="flex w-full flex-col items-start gap-5 sm:flex-row">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="flex flex-1 animate-pulse flex-col gap-3 rounded-lg border border-neutro-border bg-white p-6"
+              className="flex w-full flex-1 animate-pulse flex-col gap-3 rounded-lg border border-neutro-border bg-white p-6"
             >
               <div className="h-4 w-3/4 rounded bg-neutro-background" />
               <div className="h-3 w-full rounded bg-neutro-background" />
@@ -139,13 +139,13 @@ export function SugestoesEstrategicas({
         </div>
       ) : (
         aberto && (
-          <div className="flex w-full items-start gap-5">
+          <div className="flex w-full flex-col items-start gap-5 sm:flex-row">
             {itens.map((item, i) => (
               <CardSugestaoEstrategica
                 key={i}
                 titulo={item.titulo}
                 justificativa={item.justificativa}
-                className="flex-1"
+                className="w-full flex-1"
               />
             ))}
           </div>

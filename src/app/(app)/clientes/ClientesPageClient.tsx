@@ -69,15 +69,15 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
 
   return (
     <>
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col items-start gap-1">
           <p className="text-titulo leading-titulo font-medium text-navy">Clientes</p>
           <p className="text-legenda leading-legenda text-sidebar-muted-2">
             Gerencie sua carteira de clientes
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex h-10 w-80 items-center gap-2 rounded-md border border-neutro-border bg-white px-3">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto lg:gap-4">
+          <div className="flex h-10 w-full items-center gap-2 rounded-md border border-neutro-border bg-white px-3 sm:w-64 lg:w-80">
             <Search className="size-4 shrink-0 text-sidebar-muted-2" />
             <input
               type="text"
@@ -87,7 +87,11 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
               className="flex-1 text-corpo text-navy placeholder:text-sidebar-muted-2 focus:outline-none"
             />
           </div>
-          <ButtonPrimary icon={<Plus className="size-4" />} onClick={() => setPainelAberto("novo")}>
+          <ButtonPrimary
+            icon={<Plus className="size-4" />}
+            onClick={() => setPainelAberto("novo")}
+            className="justify-center"
+          >
             Novo cliente
           </ButtonPrimary>
         </div>
@@ -128,7 +132,7 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
           className="fixed inset-0 z-40 flex justify-end bg-black/30"
           onClick={() => !salvando && setPainelAberto(null)}
         >
-          <div className="h-full w-[380px]" onClick={(e) => e.stopPropagation()}>
+          <div className="h-full w-full max-w-[380px]" onClick={(e) => e.stopPropagation()}>
             <PanelCadastroCliente
               cliente={clienteEmEdicao}
               onClose={() => setPainelAberto(null)}
