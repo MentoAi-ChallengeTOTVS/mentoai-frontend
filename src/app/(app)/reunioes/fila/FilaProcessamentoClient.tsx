@@ -131,7 +131,7 @@ export function FilaProcessamentoClient({ seed }: { seed: ItemFilaSeed[] }) {
             {fila.map((item) => (
               <div
                 key={item.reuniaoId}
-                className="flex w-full items-center gap-4 rounded-lg border border-neutro-border bg-white p-4"
+                className="flex w-full flex-col items-stretch gap-3 rounded-lg border border-neutro-border bg-white p-4 sm:flex-row sm:items-center sm:gap-4"
               >
                 <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <p className="w-full truncate text-corpo font-medium text-navy">
@@ -148,10 +148,10 @@ export function FilaProcessamentoClient({ seed }: { seed: ItemFilaSeed[] }) {
                     </span>
                   </div>
                 </div>
-                <div className="flex w-56 shrink-0 flex-col items-end gap-1.5">
+                <div className="flex w-full flex-col items-start gap-1.5 sm:w-56 sm:shrink-0 sm:items-end">
                   <BadgeStatus status={item.status} />
                   {item.status === "PROCESSANDO" && (
-                    <div className="flex w-full flex-col items-end gap-1">
+                    <div className="flex w-full flex-col items-start gap-1 sm:items-end">
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-menta-suave">
                         <div
                           className="h-full rounded-full bg-menta transition-all"

@@ -84,17 +84,17 @@ export function ReunioesPageClient({
 
   return (
     <>
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col items-start gap-1">
           <p className="text-titulo leading-titulo font-medium text-navy">Reuniões</p>
           <p className="text-legenda leading-legenda text-sidebar-muted-2">
             Gerencie as reuniões comerciais e acompanhe as análises de IA
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
           <Link
             href="/reunioes/fila"
-            className="flex h-10 items-center gap-2 rounded-md border border-neutro-border bg-white px-4 text-corpo font-medium text-navy transition-colors hover:bg-neutro-background"
+            className="flex h-10 items-center justify-center gap-2 rounded-md border border-neutro-border bg-white px-4 text-corpo font-medium text-navy transition-colors hover:bg-neutro-background"
           >
             <Hourglass className="size-4 text-neutro-muted" />
             Fila de processamento
@@ -107,6 +107,7 @@ export function ReunioesPageClient({
           <ButtonPrimary
             icon={<Plus className="size-4" />}
             onClick={() => router.push("/reunioes/nova")}
+            className="justify-center"
           >
             Nova reunião
           </ButtonPrimary>
@@ -147,7 +148,7 @@ export function ReunioesPageClient({
         data-node-id="49:482"
         data-name="table-card"
       >
-        <div className="flex w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda leading-legenda text-sidebar-muted-2">
+        <div className="hidden w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda leading-legenda text-sidebar-muted-2 lg:flex">
           <p className="flex-1">CLIENTE</p>
           <p className="w-40 shrink-0">DATA</p>
           <p className="w-30 shrink-0">DURAÇÃO</p>
@@ -169,7 +170,7 @@ export function ReunioesPageClient({
             />
           ))
         )}
-        <div className="flex w-full items-center justify-between bg-white px-6 py-3.5">
+        <div className="flex w-full flex-col items-stretch gap-3 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="text-legenda leading-legenda text-neutro-muted">
             Exibindo {itensDaPagina.length} de {filtradas.length} reuniões
           </p>

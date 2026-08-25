@@ -29,15 +29,20 @@ export function FilterBar({
   return (
     <div
       className={clsx(
-        "flex w-full items-end gap-4 rounded-lg border border-neutro-border bg-white p-5",
+        // Responsivo (25/08/2026): abaixo de lg os filtros + busca empilham
+        // em coluna cheia; o espaçador flexível que empurra a busca pra
+        // direita só faz sentido na linha única de lg+, então some no mobile.
+        "flex w-full flex-col items-stretch gap-4 rounded-lg border border-neutro-border bg-white p-5 lg:flex-row lg:items-end",
         className
       )}
       data-node-id="59:670"
       data-name="Filter-Bar"
     >
-      {children}
-      <div className="h-[100px] min-w-px flex-1" />
-      <div className="flex w-80 shrink-0 flex-col items-start gap-1.5">
+      <div className="flex w-full flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap lg:contents">
+        {children}
+      </div>
+      <div className="hidden min-w-px flex-1 lg:block" />
+      <div className="flex w-full flex-col items-start gap-1.5 lg:w-80 lg:shrink-0">
         <p className="text-legenda text-neutro-muted">{searchLabel}</p>
         <div className="flex h-10 w-full items-center gap-2 rounded-md border border-neutro-border bg-white px-3">
           <Search className="size-4 shrink-0 text-sidebar-muted-2" />
@@ -68,7 +73,7 @@ export function FilterSelect({
   className?: string;
 }) {
   return (
-    <div className={clsx("flex w-45 shrink-0 flex-col items-start gap-1.5", className)}>
+    <div className={clsx("flex w-full flex-col items-start gap-1.5 sm:w-45 sm:shrink-0", className)}>
       <p className="text-legenda text-neutro-muted">{label}</p>
       <div className="relative w-full">
         <select

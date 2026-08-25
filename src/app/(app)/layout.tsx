@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
+import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/design-system/Sidebar";
 import { useAuth } from "@/lib/auth";
 
@@ -15,11 +17,18 @@ import { useAuth } from "@/lib/auth";
  * redireciona pra `/login`. `perfil`/`userName` agora vêm da sessão real
  * (mockada, ver `src/lib/auth.tsx`) em vez do usuário fixo de exemplo do
  * Figma usado antes de #60 existir.
+ *
+ * Responsivo (25/08/2026): abaixo de `lg` (1024px) a Sidebar vira um
+ * painel off-canvas (ver `Sidebar.tsx`) — esse layout guarda o estado de
+ * aberto/fechado (`menuAberto`) e renderiza o header mobile com o botão de
+ * hambúrguer que abre o painel (some em `lg:hidden`, já que em telas
+ * grandes a Sidebar fica sempre visível como antes).
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { usuario, carregando, logout } = useAuth();
+  const [menuAberto, setMenuAberto] = useState(false);
 
   useEffect(() => {
     if (!carregando && !usuario) router.replace("/login");
@@ -40,8 +49,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         perfil={usuario.perfil}
         userName={usuario.nome}
         onLogout={handleLogout}
+        mobileOpen={menuAberto}
+        onMobileClose={() => setMenuAberto(false)}
       />
-      <main className="flex min-w-0 flex-1 flex-col items-start gap-6 p-8">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col items-stretch">
+        <header className="flex items-center gap-3 border-b border-neutro-border bg-white px-4 py-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMenuAberto(true)}
+            aria-label="Abrir menu"
+            className="flex size-9 shrink-0 items-center justify-center rounded-md text-neutro-dark hover:bg-neutro-background"
+          >
+            <Menu className="size-5" />
+          </button>
+          <Image src="/logo-mentoai.png" alt="" width={24} height={24} className="size-6 shrink-0" />
+          <p className="text-corpo font-medium text-navy">MentoAI</p>
+        </header>
+        <main className="flex min-w-0 flex-1 flex-col items-start gap-6 p-4 sm:p-6 lg:p-8">{children}</main>
+      </div>
     </div>
   );
 }

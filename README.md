@@ -28,6 +28,7 @@ Abra `http://localhost:3000/design-system` pra ver a vitrine dos componentes já
 - **Chat** (`src/components/design-system/Chat.tsx`): `ItemConversa` (item da lista de histórico do Copiloto), `BubblePergunta` e `BubbleRespostaIa` (bolhas de pergunta/resposta — o alinhamento à esquerda/direita fica por conta de quem monta a tela).
 - **Avaliação** (`src/components/design-system/Avaliacao.tsx`): `StarRating` (input de 1 a 5 estrelas, controlado) e `ModalAvaliarServico` (o item extra "Avaliar o MentoAI" da Sidebar, fora do backlog oficial).
 - **Tabela de Clientes** (`src/components/design-system/TableClientes.tsx`): `RowCliente` + `TabelaClientesCabecalho` + `TabelaClientesRodape` (com paginação) — usados juntos na tela Clientes, feature F01 do Breno.
+- **Responsivo** de celular a desktop nas 8 telas do Breno (ver seção "Responsividade" abaixo) — sidebar vira hambúrguer, tabelas viram cards no mobile.
 
 Todos os componentes com interação (`onClick`, `onChange`) são Client Components (`"use client"`) — necessário no App Router do Next.js pra qualquer handler de evento funcionar.
 
@@ -49,6 +50,19 @@ Duas decisões de formato valem registrar:
 - Em `reunioes.service.ts` e `SugestoesEstrategicas.tsx`, o `setTimeout` que anima Pendente → Processando → Processada (Nova Reunião) e o skeleton de carregamento (Sugestões Estratégicas) continuam no client, de propósito — são simulações de UX de um processo que no mundo real seria assíncrono de verdade (fila com polling/push, ou uma chamada de IA que demora), não uma resposta única e instantânea. Só a "borda" da chamada (o que o `POST`/`GET` devolveria no dia 1) virou função de serviço.
 
 Consequência prática de arquitetura: toda tela com listagem/formulário que antes era só Client Component (`"use client"` no topo do arquivo) virou um par **Server Component (`page.tsx`, busca o dado inicial via `service`) + Client Component (`*Client.tsx` / `*Form.tsx`, mantém a interatividade)** — mesmo padrão que já existia em Perfil do Cliente e Detalhe da Reunião desde antes desta revisão, agora aplicado em todas as telas: `clientes/page.tsx` + `ClientesPageClient.tsx`, `usuarios/page.tsx` + `UsuariosPageClient.tsx`, `reunioes/page.tsx` + `ReunioesPageClient.tsx`, `reunioes/nova/page.tsx` + `NovaReuniaoForm.tsx`, `reunioes/fila/page.tsx` + `FilaProcessamentoClient.tsx`.
+
+## Responsividade (25/08/2026)
+
+Todas as 8 telas do Breno (Login, Meu Perfil, Clientes, Perfil do Cliente, Usuários, Reuniões, Nova Reunião, Detalhe da Reunião, Fila de Processamento) foram revisadas pra funcionar de celular (~375px) a desktop grande, sem depender de zoom nem de rolagem horizontal. Estratégia adotada:
+
+- **Breakpoint estrutural único: `lg` (1024px, padrão do Tailwind)**. Abaixo disso, os layouts de duas colunas empilham em uma coluna só, e as tabelas com colunas fixas viram listas de cards. A partir de `lg`, o layout volta a ser exatamente o do Figma (nenhuma mudança visual em telas grandes — conferido lado a lado via screenshot antes/depois). Telas de tablet (768–1024px) recebem o mesmo tratamento do mobile por simplicidade, em vez de um terceiro layout intermediário.
+- **Sidebar vira menu hambúrguer abaixo de `lg`** (`Sidebar.tsx`): painel `fixed` fora da tela por padrão, desliza pra dentro com um backdrop escurecido quando aberto. `AppLayout` (`src/app/(app)/layout.tsx`) ganhou um header mobile (`lg:hidden`) com o botão de abrir; clicar em qualquer item de navegação ou no bloco "Meu Perfil" fecha o painel automaticamente (via `onClick` direto nos links, não `useEffect` — evita o cascading-render que o ESLint do React acusa nesse padrão).
+- **Tabelas viram cards empilhados abaixo de `lg`**: `RowCliente` (`TableClientes.tsx`), `RowUsuario` e `RowReuniao` (`Rows.tsx`) agora renderizam dois blocos — a linha de tabela original (`hidden lg:flex`) e um card compacto (`flex lg:hidden`) com os mesmos dados reorganizados verticalmente. Os cabeçalhos de coluna (`TabelaClientesCabecalho` e os equivalentes inline em Usuários/Reuniões) somem no mobile, já que não fazem sentido sem colunas.
+- **`FilterBar`** (usada em Reuniões, e que o Pedro vai reaproveitar em Alertas) empilha os filtros e o campo de busca em coluna no mobile, com os filtros quebrando em duas colunas a partir de `sm` (640px) antes de virar linha única em `lg`.
+- **Drawers (`PanelCadastroCliente`, `PanelEditarUsuario`)** passam de largura fixa (`w-[380px]`/`w-[420px]`) pra `w-full max-w-[Npx]` — ocupam a tela inteira no mobile (onde uma largura fixa estouraria a viewport) e mantêm a largura de referência do Figma a partir de onde já cabem. Ganharam `overflow-y-auto` como rede de segurança em telas bem baixas.
+- Formulários com campos lado a lado (Nova Reunião: Cliente/Data) empilham abaixo de `sm` (640px); barras de ação com texto + botões (confirmação de envio, Sugestões Estratégicas) empilham abaixo de `sm` também.
+
+Nenhuma mudança de dado ou de arquitetura — só CSS/layout (classes Tailwind responsivas). `Meu Perfil` não precisou de ajuste: já usava `w-full max-w-[520px]`, responsivo por natureza.
 
 ## Nota sobre ícones e imagens
 

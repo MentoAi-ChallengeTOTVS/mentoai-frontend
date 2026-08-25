@@ -12,6 +12,7 @@ import {
   Sparkles,
   Star,
   LogOut,
+  X,
 } from "lucide-react";
 import type { PerfilUsuario } from "@/types/domain";
 
@@ -66,20 +67,34 @@ export interface SidebarProps {
   onLogout?: () => void;
   /** Rota do "Meu Perfil" (issue #60) pra onde o bloco do usuário aponta. */
   perfilHref?: string;
+  /**
+   * Responsivo (25/08/2026) — abaixo de `lg` a Sidebar vira um painel
+   * off-canvas (fixed, some da tela por padrão) em vez de ficar sempre
+   * visível. `mobileOpen` controla se está aberta; sem `onMobileClose`, o
+   * botão de fechar e o backdrop não aparecem (mesmo racional de
+   * `onLogout` acima — comportamento opcional, cai pro padrão "sempre
+   * visível" de telas grandes quando não usado).
+   */
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
   className?: string;
 }
 
 function NavLink({
   item,
   active,
+  onNavigate,
 }: {
   item: NavItem;
   active: boolean;
+  /** Responsivo (25/08/2026) — fecha o painel mobile ao navegar (só tem efeito nesse modo). */
+  onNavigate?: () => void;
 }) {
   const Icon = item.icon;
   return (
     <Link
       href={item.href}
+      onClick={onNavigate}
       className="flex h-12 w-full items-center gap-3 px-4"
       data-figma-node={item.href}
     >
@@ -111,33 +126,59 @@ export function Sidebar({
   onOpenAvaliacao,
   onLogout,
   perfilHref = "/perfil",
+  mobileOpen = false,
+  onMobileClose,
   className,
 }: SidebarProps) {
   const isDiretor = perfil === "DIRETOR_COMERCIAL";
 
   return (
-    <div
-      className={clsx(
-        // h-screen em vez do h-[900px] fixo do frame do Figma — numa página
-        // real a sidebar precisa esticar com a viewport, não travar em 900px.
-        "flex h-screen w-[220px] shrink-0 flex-col justify-between bg-navy py-6",
-        className
+    <>
+      {/* Backdrop — só existe (e só é clicável) enquanto o painel mobile está aberto; some em telas lg+. */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
       )}
-      data-node-id={isDiretor ? "105:939" : "15:229"}
-      data-name={isDiretor ? "Sidebar/Admin" : "Sidebar/Main"}
-    >
+      <div
+        className={clsx(
+          // Abaixo de lg: painel fixo, fora da tela por padrão (-translate-x-full),
+          // desliza pra dentro quando mobileOpen. Em lg+: volta a ser um item de
+          // flex normal, sempre visível — h-screen em vez do h-[900px] fixo do
+          // frame do Figma, pra esticar com a viewport numa página real.
+          "fixed inset-y-0 left-0 z-50 flex h-screen w-[260px] shrink-0 flex-col justify-between bg-navy py-6 transition-transform duration-200 ease-out",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          "lg:static lg:z-auto lg:w-[220px] lg:translate-x-0",
+          className
+        )}
+        data-node-id={isDiretor ? "105:939" : "15:229"}
+        data-name={isDiretor ? "Sidebar/Admin" : "Sidebar/Main"}
+      >
       <div className="flex w-full flex-col items-start gap-8">
         {/* logo-container */}
-        <div className="flex items-center gap-2 px-4">
-          <Image src="/logo-mentoai.png" alt="" width={36} height={36} className="size-9 shrink-0" priority />
-          <div className="flex flex-col items-start whitespace-nowrap">
-            <p className="text-subtitulo leading-subtitulo font-medium text-white">
-              MentoAI
-            </p>
-            <p className="text-caption leading-caption text-menta-clara">
-              by TOTVS
-            </p>
+        <div className="flex w-full items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <Image src="/logo-mentoai.png" alt="" width={36} height={36} className="size-9 shrink-0" priority />
+            <div className="flex flex-col items-start whitespace-nowrap">
+              <p className="text-subtitulo leading-subtitulo font-medium text-white">
+                MentoAI
+              </p>
+              <p className="text-caption leading-caption text-menta-clara">
+                by TOTVS
+              </p>
+            </div>
           </div>
+          {/* Botão de fechar — só existe em telas mobile (lg:hidden), acompanha o backdrop. */}
+          <button
+            type="button"
+            onClick={onMobileClose}
+            aria-label="Fechar menu"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full text-sidebar-muted hover:text-white lg:hidden"
+          >
+            <X className="size-4" />
+          </button>
         </div>
 
         {/* nav-list */}
@@ -160,6 +201,7 @@ export function Sidebar({
               key={item.href}
               item={item}
               active={activeHref === item.href || activeHref.startsWith(`${item.href}/`)}
+              onNavigate={onMobileClose}
             />
           ))}
 
@@ -175,6 +217,7 @@ export function Sidebar({
                   key={item.href}
                   item={item}
                   active={activeHref === item.href || activeHref.startsWith(`${item.href}/`)}
+                  onNavigate={onMobileClose}
                 />
               ))}
             </>
@@ -203,7 +246,7 @@ export function Sidebar({
 
       {/* sidebar-footer */}
       <div className="flex w-full items-center gap-2 px-4">
-        <Link href={perfilHref} className="flex min-w-0 flex-1 items-center gap-3">
+        <Link href={perfilHref} onClick={onMobileClose} className="flex min-w-0 flex-1 items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-menta-clara text-sm font-medium text-navy">
             {userName
               .split(" ")
@@ -231,6 +274,7 @@ export function Sidebar({
           </button>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

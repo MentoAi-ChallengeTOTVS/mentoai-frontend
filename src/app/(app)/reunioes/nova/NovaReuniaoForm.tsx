@@ -108,10 +108,10 @@ export function NovaReuniaoForm({ clientes }: { clientes: Cliente[] }) {
         </p>
       </div>
 
-      <div className="flex w-full items-start gap-6">
+      <div className="flex w-full flex-col items-start gap-6 lg:flex-row">
         <form
           onSubmit={handleSubmit}
-          className="flex flex-1 flex-col items-start gap-6 rounded-lg border border-neutro-border bg-white p-6"
+          className="flex w-full flex-1 flex-col items-start gap-6 rounded-lg border border-neutro-border bg-white p-6"
         >
           <CardUploadTranscricao
             onFilesSelected={handleFilesSelected}
@@ -126,8 +126,8 @@ export function NovaReuniaoForm({ clientes }: { clientes: Cliente[] }) {
             </p>
           )}
 
-          <div className="flex w-full items-start gap-4">
-            <label className="flex flex-1 flex-col items-start gap-2">
+          <div className="flex w-full flex-col items-start gap-4 sm:flex-row">
+            <label className="flex w-full flex-1 flex-col items-start gap-2">
               <span className="text-legenda leading-legenda text-navy">Cliente</span>
               <select
                 value={clienteId}
@@ -143,7 +143,7 @@ export function NovaReuniaoForm({ clientes }: { clientes: Cliente[] }) {
                 ))}
               </select>
             </label>
-            <label className="flex flex-1 flex-col items-start gap-2">
+            <label className="flex w-full flex-1 flex-col items-start gap-2">
               <span className="text-legenda leading-legenda text-navy">Data da reunião</span>
               <input
                 type="date"
@@ -169,7 +169,7 @@ export function NovaReuniaoForm({ clientes }: { clientes: Cliente[] }) {
         </form>
 
         {status && enviadoEm && arquivo ? (
-          <div className="w-[380px] shrink-0">
+          <div className="w-full lg:w-[380px] lg:shrink-0">
             <PanelStatusEnvio
               status={status}
               nomeArquivo={arquivo.name}
@@ -179,7 +179,7 @@ export function NovaReuniaoForm({ clientes }: { clientes: Cliente[] }) {
             />
           </div>
         ) : (
-          <div className="flex w-[380px] shrink-0 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-neutro-border bg-white p-8 text-center">
+          <div className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-neutro-border bg-white p-8 text-center lg:w-[380px] lg:shrink-0">
             <p className="text-corpo text-neutro-muted">
               O status do envio aparece aqui assim que você enviar a transcrição para análise.
             </p>
@@ -188,7 +188,7 @@ export function NovaReuniaoForm({ clientes }: { clientes: Cliente[] }) {
       </div>
 
       {status === "PROCESSADA" && (
-        <div className="flex w-full items-center justify-between rounded-lg border border-sinal-oportunidade bg-sinal-oportunidade/[0.06] px-6 py-4">
+        <div className="flex w-full flex-col items-start gap-3 rounded-lg border border-sinal-oportunidade bg-sinal-oportunidade/[0.06] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-corpo text-neutro-dark">
             Transcrição {clienteSelecionado ? `de ${clienteSelecionado.nome} ` : ""}enviada para
             análise. A IA está processando os sinais comerciais dessa reunião.
