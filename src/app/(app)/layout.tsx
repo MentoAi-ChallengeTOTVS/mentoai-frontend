@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/design-system/Sidebar";
+import { BuscaGlobalOverlay } from "@/components/design-system/BuscaGlobalOverlay";
 import { useAuth } from "@/lib/auth";
 
 /**
@@ -23,12 +24,18 @@ import { useAuth } from "@/lib/auth";
  * aberto/fechado (`menuAberto`) e renderiza o header mobile com o botão de
  * hambúrguer que abre o painel (some em `lg:hidden`, já que em telas
  * grandes a Sidebar fica sempre visível como antes).
+ *
+ * Busca Global (26/08/2026, issue #92): é um overlay, não uma rota, então
+ * mora aqui — este layout guarda o `buscaAberta` e é quem finalmente passa o
+ * `onOpenSearch` que a Sidebar já esperava desde o port do design system
+ * (até então o item "Buscar" não fazia nada). Ver `BuscaGlobalOverlay.tsx`.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { usuario, carregando, logout } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [buscaAberta, setBuscaAberta] = useState(false);
 
   useEffect(() => {
     if (!carregando && !usuario) router.replace("/login");
@@ -49,6 +56,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         perfil={usuario.perfil}
         userName={usuario.nome}
         onLogout={handleLogout}
+        onOpenSearch={() => {
+          // Fecha o menu mobile junto: no celular a Sidebar cobre a tela
+          // inteira e o painel de busca abriria atrás dela.
+          setMenuAberto(false);
+          setBuscaAberta(true);
+        }}
         mobileOpen={menuAberto}
         onMobileClose={() => setMenuAberto(false)}
       />
@@ -67,6 +80,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <main className="flex min-w-0 flex-1 flex-col items-start gap-6 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+      {buscaAberta && <BuscaGlobalOverlay onClose={() => setBuscaAberta(false)} />}
     </div>
   );
 }

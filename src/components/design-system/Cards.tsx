@@ -197,15 +197,40 @@ export function CardLoginForm({
 
 // ---------- Card/KPI (218px de referência — usado 4x lado a lado no Dashboard) ----------
 
+/**
+ * Ponto colorido opcional antes do título do KPI. No Dashboard Executivo
+ * (74:590) só os cards "Sinais de Risco" (vermelho) e "Oportunidades" (verde)
+ * têm — é o mesmo vocabulário de cor semântica de sinal usado em toda a
+ * aplicação, então o card recebe o significado, não o hex.
+ */
+export type IndicadorKPI = "risco" | "oportunidade" | "alerta" | "concorrencia";
+
+const INDICADOR_KPI_COR: Record<IndicadorKPI, string> = {
+  risco: "bg-sinal-risco-churn",
+  oportunidade: "bg-sinal-oportunidade",
+  alerta: "bg-sinal-alerta",
+  concorrencia: "bg-sinal-concorrencia",
+};
+
 export function CardKPI({
   titulo,
   valor,
+  indicador,
   tendencia,
+  legenda,
   className,
 }: {
   titulo: string;
   valor: string | number;
+  indicador?: IndicadorKPI;
+  /** Rodapé com seta e cor de variação (ex.: "+12 este mês"). */
   tendencia?: { direcao: "up" | "down"; texto: string };
+  /**
+   * Rodapé em texto neutro, sem seta (ex.: "no mês atual", "identificadas
+   * pela IA") — 3 dos 4 KPIs do Dashboard usam essa variante, não a de
+   * tendência. Ignorado quando `tendencia` está presente.
+   */
+  legenda?: string;
   className?: string;
 }) {
   return (
@@ -217,9 +242,17 @@ export function CardKPI({
       data-node-id="82:703"
       data-name="Card/KPI"
     >
-      <p className="text-legenda text-neutro-muted">{titulo}</p>
+      <div className="flex w-full items-center gap-2">
+        {indicador && (
+          <span
+            className={clsx("size-2 shrink-0 rounded-full", INDICADOR_KPI_COR[indicador])}
+            aria-hidden="true"
+          />
+        )}
+        <p className="text-legenda text-neutro-muted">{titulo}</p>
+      </div>
       <p className="text-[36px] leading-[42px] font-bold text-neutro-dark">{valor}</p>
-      {tendencia && (
+      {tendencia ? (
         <div
           className={clsx(
             "flex items-center gap-1 text-caption leading-caption",
@@ -233,6 +266,8 @@ export function CardKPI({
           )}
           <span className="whitespace-nowrap">{tendencia.texto}</span>
         </div>
+      ) : (
+        legenda && <p className="text-caption leading-caption text-neutro-muted">{legenda}</p>
       )}
     </div>
   );

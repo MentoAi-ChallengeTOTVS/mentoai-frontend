@@ -89,6 +89,12 @@ function minutosDepois(iso: string, min: number) {
 
 // Conjunto genérico de sinais pra reuniões PROCESSADA sem roteiro dedicado —
 // cicla por essas entradas conforme a quantidade indicada por reunião.
+//
+// Ampliado em 26/08/2026 (issue #90): antes havia uma entrada por tipo, então
+// todo `RISCO_CHURN` do mock tinha exatamente a mesma descrição — e o card
+// "Clientes que Precisam de Atenção" do Dashboard, que lista um cliente por
+// motivo, saía com 5 linhas de texto idêntico. Agora são duas variantes por
+// tipo, o que também dá mais variedade aos badges da lista de Reuniões.
 const SINAIS_GENERICOS: { tipo: TipoSinalComercial; descricao: string; evidencia: string }[] = [
   {
     tipo: "NECESSIDADE",
@@ -124,6 +130,41 @@ const SINAIS_GENERICOS: { tipo: TipoSinalComercial; descricao: string; evidencia
     tipo: "RISCO_CHURN",
     descricao: "Insatisfação recorrente com tempo de resposta do suporte",
     evidencia: "Já é a segunda vez que demora mais de um dia pra responder",
+  },
+  {
+    tipo: "NECESSIDADE",
+    descricao: "Necessidade de integração com o sistema fiscal já em uso",
+    evidencia: "Se não conversar com o nosso fiscal, não adianta pra gente",
+  },
+  {
+    tipo: "DOR",
+    descricao: "Falta de visibilidade do estoque entre filiais",
+    evidencia: "Ninguém sabe o que tem na outra unidade sem ligar e perguntar",
+  },
+  {
+    tipo: "ORCAMENTO",
+    descricao: "Verba depende de aprovação do conselho no próximo ciclo",
+    evidencia: "Isso só passa se o conselho aprovar na reunião de dezembro",
+  },
+  {
+    tipo: "PRAZO",
+    descricao: "Implantação precisa acontecer fora do período de safra",
+    evidencia: "De janeiro a março a gente não para pra treinar ninguém",
+  },
+  {
+    tipo: "OPORTUNIDADE",
+    descricao: "Interesse declarado em módulo de relatórios avançados",
+    evidencia: "Aquele painel que você mostrou resolveria meu problema",
+  },
+  {
+    tipo: "CONCORRENCIA",
+    descricao: "Renovação com fornecedor atual vence no próximo trimestre",
+    evidencia: "O contrato com eles termina em março e não vamos renovar no automático",
+  },
+  {
+    tipo: "RISCO_CHURN",
+    descricao: "Patrocinador do projeto saiu da empresa",
+    evidencia: "Quem tocava isso aqui não trabalha mais com a gente",
   },
 ];
 

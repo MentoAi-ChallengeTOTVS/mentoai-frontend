@@ -17,6 +17,12 @@ import type {
  * Rows do Design System — `Row/Reuniao` (59:646), `Row/Usuario` (67:560),
  * `Row/Alerta` (91:1151), `Row/Busca-Cliente` (127:1318),
  * `Row/Busca-Reuniao` (127:1330).
+ *
+ * Correção 26/08/2026 (issue #88): o ponto de "não lido" da `Row/Alerta`
+ * estava em `sinal-alerta` (laranja) — conferindo o componente no frame ROWS
+ * do Design System e as linhas da tela Central de Alertas, ele é verde
+ * (`menta`) nos dois. O laranja era drift do port original; corrigido aqui em
+ * vez de na tela, pra vitrine `/design-system` e tela continuarem iguais.
  */
 
 function formatData(iso: string) {
@@ -217,29 +223,43 @@ export function RowAlerta({
   return (
     <div
       className={clsx(
-        "flex w-full items-center gap-4 border-b border-neutro-border bg-white px-6 py-4",
+        // Responsivo: abaixo de sm a linha empilha (cliente/motivo em cima,
+        // prioridade + status embaixo), mesmo racional das outras rows.
+        "flex w-full flex-col items-start gap-2 border-b border-neutro-border bg-white px-4 py-3.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-4 sm:px-6 sm:py-4",
         className
       )}
       data-node-id="91:1151"
       data-name="Row/Alerta"
     >
-      <div className="flex w-55 shrink-0 items-center gap-3">
-        {!lido && <span className="size-2.5 shrink-0 rounded-full bg-sinal-alerta" />}
-        <p className="flex-1 truncate text-corpo text-navy">{clienteNome}</p>
+      <div className="flex w-full min-w-0 items-center gap-3 sm:w-55 sm:shrink-0">
+        {/* O ponto de "não lido" ocupa lugar fixo: numa linha já lida ele fica
+            invisível em vez de sumir, senão o nome do cliente escorrega pra
+            esquerda e as linhas param de alinhar (é assim no Figma). */}
+        <span
+          className={clsx("size-2.5 shrink-0 rounded-full", lido ? "invisible" : "bg-menta")}
+          aria-hidden="true"
+        />
+        <p className="min-w-0 flex-1 truncate text-corpo text-navy">{clienteNome}</p>
       </div>
-      <p className="flex-1 text-corpo text-neutro-dark">{motivo}</p>
-      <div className="flex w-30 shrink-0 items-start justify-center">
-        <BadgePrioridade nivel={prioridade} />
-      </div>
-      <div className="flex w-30 shrink-0 items-start justify-end">
-        <p
-          className={clsx(
-            "whitespace-nowrap text-caption",
-            lido ? "text-neutro-muted" : "text-menta"
-          )}
-        >
-          {lido ? "Lido" : "Não lido"}
-        </p>
+      {/* Linha já lida fica com o motivo em cinza — é o que separa lida de não
+          lida visualmente na tela de Alertas, junto com o ponto acima. */}
+      <p className={clsx("flex-1 text-corpo", lido ? "text-neutro-muted" : "text-neutro-dark")}>
+        {motivo}
+      </p>
+      <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
+        <div className="flex shrink-0 items-start sm:w-30 sm:justify-center">
+          <BadgePrioridade nivel={prioridade} />
+        </div>
+        <div className="flex shrink-0 items-start justify-end sm:w-30">
+          <p
+            className={clsx(
+              "whitespace-nowrap text-caption",
+              lido ? "text-neutro-muted" : "text-menta"
+            )}
+          >
+            {lido ? "Lido" : "Não lido"}
+          </p>
+        </div>
       </div>
     </div>
   );

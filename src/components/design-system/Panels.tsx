@@ -539,19 +539,40 @@ export function PanelBuscaGlobal({
   onClear,
   clientes,
   reunioes,
+  totalClientes,
+  totalReunioes,
+  onSelecionarCliente,
+  onSelecionarReuniao,
   onVerTodosClientes,
   onVerTodasReunioes,
+  inputRef,
   className,
 }: {
   query: string;
   onQueryChange?: (value: string) => void;
   onClear?: () => void;
+  /** Resultados a exibir — quem chama pode mandar uma fatia dos resultados. */
   clientes: Cliente[];
   reunioes: Reuniao[];
+  /**
+   * Total de resultados da busca, quando `clientes`/`reunioes` acima são só
+   * as primeiras N linhas. Sem isso, o contador do cabeçalho usa o tamanho
+   * da lista recebida (comportamento anterior).
+   */
+  totalClientes?: number;
+  totalReunioes?: number;
+  /** Sem handler, a linha continua sendo só visual (como no showcase). */
+  onSelecionarCliente?: (cliente: Cliente) => void;
+  onSelecionarReuniao?: (reuniao: Reuniao) => void;
   onVerTodosClientes?: () => void;
   onVerTodasReunioes?: () => void;
+  /** Permite focar o campo de busca ao abrir o painel. */
+  inputRef?: React.Ref<HTMLInputElement>;
   className?: string;
 }) {
+  const qtdClientes = totalClientes ?? clientes.length;
+  const qtdReunioes = totalReunioes ?? reunioes.length;
+
   return (
     <div
       className={clsx(
@@ -561,18 +582,19 @@ export function PanelBuscaGlobal({
       data-node-id="127:1340"
       data-name="Panel/Busca-Global"
     >
-      <div className="flex w-full flex-col items-start gap-2 bg-navy p-4">
+      <div className="flex w-full shrink-0 flex-col items-start gap-2 bg-navy p-4">
         <p className="pb-1 text-[11px] font-semibold uppercase leading-4 text-menta-clara">
           MentoAI Busca
         </p>
         <div className="flex w-full items-center gap-3 rounded-md border border-white/20 bg-white/10 px-4 py-2.5">
           <Search className="size-4 shrink-0 text-white/70" />
           <input
+            ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => onQueryChange?.(e.target.value)}
             placeholder="Buscar clientes, reuniões..."
-            className="flex-1 bg-transparent text-corpo text-white placeholder:text-white/50 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-corpo text-white placeholder:text-white/50 focus:outline-none"
           />
           {query && (
             <button type="button" onClick={onClear} aria-label="Limpar busca">
@@ -582,13 +604,16 @@ export function PanelBuscaGlobal({
         </div>
       </div>
 
-      <div className="flex w-full flex-col items-start gap-4 bg-white p-4">
+      {/* `min-h-0 overflow-y-auto`: com muitos resultados o painel para de
+          crescer e a lista rola por dentro, em vez de vazar da viewport
+          (quem usa o painel define a altura máxima). */}
+      <div className="flex w-full min-h-0 flex-1 flex-col items-start gap-4 overflow-y-auto bg-white p-4">
         <div className="flex w-full flex-col items-start gap-2">
           <div className="flex w-full items-center justify-between pb-1">
             <p className="text-[12px] font-semibold uppercase text-neutro-muted">
-              Clientes ({clientes.length})
+              Clientes ({qtdClientes})
             </p>
-            {clientes.length > 0 && (
+            {qtdClientes > 0 && (
               <button
                 type="button"
                 onClick={onVerTodosClientes}
@@ -602,9 +627,20 @@ export function PanelBuscaGlobal({
             <p className="text-legenda text-neutro-muted">Nenhum cliente encontrado.</p>
           ) : (
             <div className="flex w-full flex-col gap-2">
-              {clientes.map((cliente) => (
-                <RowBuscaCliente key={cliente.id} cliente={cliente} />
-              ))}
+              {clientes.map((cliente) =>
+                onSelecionarCliente ? (
+                  <button
+                    key={cliente.id}
+                    type="button"
+                    onClick={() => onSelecionarCliente(cliente)}
+                    className="w-full text-left"
+                  >
+                    <RowBuscaCliente cliente={cliente} />
+                  </button>
+                ) : (
+                  <RowBuscaCliente key={cliente.id} cliente={cliente} />
+                )
+              )}
             </div>
           )}
         </div>
@@ -612,9 +648,9 @@ export function PanelBuscaGlobal({
         <div className="flex w-full flex-col items-start gap-2">
           <div className="flex w-full items-center justify-between pb-1">
             <p className="text-[12px] font-semibold uppercase text-neutro-muted">
-              Reuniões ({reunioes.length})
+              Reuniões ({qtdReunioes})
             </p>
-            {reunioes.length > 0 && (
+            {qtdReunioes > 0 && (
               <button
                 type="button"
                 onClick={onVerTodasReunioes}
@@ -628,9 +664,20 @@ export function PanelBuscaGlobal({
             <p className="text-legenda text-neutro-muted">Nenhuma reunião encontrada.</p>
           ) : (
             <div className="flex w-full flex-col gap-2">
-              {reunioes.map((reuniao) => (
-                <RowBuscaReuniao key={reuniao.id} reuniao={reuniao} />
-              ))}
+              {reunioes.map((reuniao) =>
+                onSelecionarReuniao ? (
+                  <button
+                    key={reuniao.id}
+                    type="button"
+                    onClick={() => onSelecionarReuniao(reuniao)}
+                    className="w-full text-left"
+                  >
+                    <RowBuscaReuniao reuniao={reuniao} />
+                  </button>
+                ) : (
+                  <RowBuscaReuniao key={reuniao.id} reuniao={reuniao} />
+                )
+              )}
             </div>
           )}
         </div>
