@@ -712,29 +712,29 @@ export function CardHistoricoAnalises({
       data-name="Card/Historico-Analises"
     >
       <p className="text-subtitulo font-medium text-neutro-dark">Histórico de Análises</p>
-      <div className="flex w-full items-center justify-between py-3">
+      <div className="grid w-full grid-cols-2 gap-x-4 gap-y-4 py-3 sm:flex sm:items-center sm:justify-between">
         <div className="flex flex-col items-start gap-1">
-          <p className="whitespace-nowrap text-legenda text-neutro-muted">
+          <p className="text-legenda text-neutro-muted">
             Início do processamento
           </p>
-          <p className="whitespace-nowrap text-corpo text-neutro-dark">
+          <p className="text-corpo text-neutro-dark">
             {formatDataHora(analise.iniciadoEm)}
           </p>
         </div>
         <div className="flex flex-col items-start gap-1">
-          <p className="whitespace-nowrap text-legenda text-neutro-muted">Fim do processamento</p>
-          <p className="whitespace-nowrap text-corpo text-neutro-dark">
+          <p className="text-legenda text-neutro-muted">Fim do processamento</p>
+          <p className="text-corpo text-neutro-dark">
             {analise.finalizadoEm ? formatDataHora(analise.finalizadoEm) : "—"}
           </p>
         </div>
         <div className="flex flex-col items-start gap-1">
-          <p className="whitespace-nowrap text-legenda text-neutro-muted">Duração</p>
-          <p className="whitespace-nowrap text-corpo text-neutro-dark">
+          <p className="text-legenda text-neutro-muted">Duração</p>
+          <p className="text-corpo text-neutro-dark">
             {formatDuracao(analise.iniciadoEm, analise.finalizadoEm)}
           </p>
         </div>
         <div className="flex flex-col items-start gap-1">
-          <p className="whitespace-nowrap text-legenda text-neutro-muted">Status</p>
+          <p className="text-legenda text-neutro-muted">Status</p>
           <BadgeStatus status={analise.statusProcessamento} />
         </div>
       </div>

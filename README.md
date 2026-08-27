@@ -67,6 +67,8 @@ Todas as 8 telas do Breno (Login, Meu Perfil, Clientes, Perfil do Cliente, Usuá
 
 Nenhuma mudança de dado ou de arquitetura — só CSS/layout (classes Tailwind responsivas). `Meu Perfil` não precisou de ajuste: já usava `w-full max-w-[520px]`, responsivo por natureza.
 
+**Correção pós-entrega (25/08/2026):** o `Card/Historico-Analises` (dentro do Detalhe da Reunião) tinha ficado de fora da revisão inicial — as 4 colunas (Início/Fim/Duração/Status) usavam `whitespace-nowrap` numa linha `flex justify-between` sem empilhar, causando rolagem horizontal no card em telas estreitas. Corrigido pra virar um grid 2×2 abaixo de `sm` (640px) e voltar a uma linha só a partir daí — mesmo racional dos outros ajustes desta seção. Varredura com Playwright em 375/390/414/430/820px confirmando zero overflow horizontal em todas as 8 telas depois da correção.
+
 ## Nota sobre ícones e imagens
 
 O sandbox onde esse scaffold foi gerado não tem acesso de rede pra baixar os assets exportados do Figma (ícones em SVG, logo, foto de avatar) — as URLs que o Figma MCP retorna expiram em ~7 dias e não puderam ser baixadas aqui.
