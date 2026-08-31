@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/design-system/Sidebar";
 import { BuscaGlobalOverlay } from "@/components/design-system/BuscaGlobalOverlay";
+import { AvaliacaoOverlay } from "@/components/design-system/AvaliacaoOverlay";
 import { useAuth } from "@/lib/auth";
 
 /**
@@ -25,10 +26,13 @@ import { useAuth } from "@/lib/auth";
  * hambúrguer que abre o painel (some em `lg:hidden`, já que em telas
  * grandes a Sidebar fica sempre visível como antes).
  *
- * Busca Global (26/08/2026, issue #92): é um overlay, não uma rota, então
- * mora aqui — este layout guarda o `buscaAberta` e é quem finalmente passa o
- * `onOpenSearch` que a Sidebar já esperava desde o port do design system
- * (até então o item "Buscar" não fazia nada). Ver `BuscaGlobalOverlay.tsx`.
+ * Os dois overlays da Sidebar moram aqui pelo mesmo motivo — nenhum dos dois
+ * é rota, e os dois podem abrir de qualquer tela autenticada:
+ * - Busca Global (26/08/2026, issue #92): `BuscaGlobalOverlay.tsx`.
+ * - Avaliar o MentoAI (item extra, fora do backlog): `AvaliacaoOverlay.tsx`.
+ * Em ambos os casos a Sidebar já esperava a prop (`onOpenSearch`,
+ * `onOpenAvaliacao`) desde o port do design system, sem ninguém passando —
+ * os dois itens eram cliques mortos até serem ligados aqui.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,6 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { usuario, carregando, logout } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
   const [buscaAberta, setBuscaAberta] = useState(false);
+  const [avaliacaoAberta, setAvaliacaoAberta] = useState(false);
 
   useEffect(() => {
     if (!carregando && !usuario) router.replace("/login");
@@ -62,6 +67,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           setMenuAberto(false);
           setBuscaAberta(true);
         }}
+        onOpenAvaliacao={() => {
+          setMenuAberto(false);
+          setAvaliacaoAberta(true);
+        }}
         mobileOpen={menuAberto}
         onMobileClose={() => setMenuAberto(false)}
       />
@@ -81,6 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex min-w-0 flex-1 flex-col items-start gap-6 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
       {buscaAberta && <BuscaGlobalOverlay onClose={() => setBuscaAberta(false)} />}
+      {avaliacaoAberta && <AvaliacaoOverlay onClose={() => setAvaliacaoAberta(false)} />}
     </div>
   );
 }

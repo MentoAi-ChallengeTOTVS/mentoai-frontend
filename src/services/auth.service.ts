@@ -55,3 +55,22 @@ export async function autenticar(email: string, senha: string): Promise<Usuario>
     atualizacao: agora,
   };
 }
+
+/**
+ * Solicita o link de redefinição de senha (tela `/esqueci-senha`, linkada
+ * pelo "Esqueci minha senha" do `Card/Login-Form`).
+ *
+ * Não devolve se o e-mail existe ou não, de propósito: um endpoint de
+ * recuperação que responde diferente pra e-mail cadastrado e não cadastrado
+ * vira um enumerador de contas. A tela mostra a mesma mensagem nos dois
+ * casos, e o backend real deve manter esse comportamento.
+ *
+ * Endpoint esperado: `POST /api/auth/esqueci-senha`
+ */
+export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
+  if (!email.trim()) {
+    throw new Error("Informe o e-mail da sua conta.");
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
+}
