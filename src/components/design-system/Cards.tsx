@@ -469,14 +469,6 @@ export function CardClientesAtencao({
   );
 }
 
-// ---------- Card/Tendencia-Sinais (82:848) ----------
-// O Figma representa a linha do tempo com 3 imagens de sparkline exportadas
-// (SVGs estáticos) — mas isso é um gráfico movido a dado real (varia por
-// cliente/período), não um ícone fixo, então não faz sentido versionar como
-// asset estático. Reconstruído aqui como SVG gerado a partir de `pontos`,
-// igual a qualquer lib de charting faria — mesma decisão de espírito que a
-// troca de ícones por lucide-react (documentada no README).
-
 export interface TendenciaMes {
   mes: string;
   oportunidades: number;

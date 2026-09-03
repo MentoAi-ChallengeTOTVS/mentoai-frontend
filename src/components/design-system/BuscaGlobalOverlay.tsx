@@ -7,25 +7,6 @@ import { listarClientes } from "@/services/clientes.service";
 import { listarReunioesComStatus } from "@/services/reunioes.service";
 import type { Cliente, Reuniao } from "@/types/domain";
 
-/**
- * Busca Global (Figma: frame "busca-global-aberta-mentoai", 108:972; painel
- * `Panel/Busca-Global` 127:1340) — feature BL011, issue #92.
- *
- * Não é uma rota: é um overlay montado no `layout.tsx` das telas
- * autenticadas e aberto pelo item "Buscar" da Sidebar (que até aqui tinha a
- * prop `onOpenSearch` sem ninguém passando — clicar não fazia nada).
- *
- * Por não ter rota própria, também não tem Server Component pra buscar o
- * dado: o fetch acontece aqui num `useEffect` quando o painel monta. É a
- * única exceção ao padrão Server+Client das outras telas, e é deliberada —
- * o overlay pode abrir de qualquer rota.
- *
- * A filtragem é client-side sobre a lista completa, como nas outras telas.
- * Num backend real isso vira um `GET /api/busca?q=` — quando isso acontecer,
- * o que muda é só a origem da lista, não o componente.
- */
-
-/** Quantas linhas o painel mostra por seção antes do "Ver todos". */
 const MAX_RESULTADOS = 4;
 
 export function BuscaGlobalOverlay({ onClose }: { onClose: () => void }) {

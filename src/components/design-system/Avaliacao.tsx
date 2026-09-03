@@ -5,20 +5,6 @@ import clsx from "clsx";
 import { Star, XCircle } from "lucide-react";
 import { ButtonPrimary } from "./Button";
 
-/**
- * Star-Rating (132:1477) e Modal/Avaliar-Servico (132:1489) — item extra
- * "Avaliar o MentoAI" da Sidebar, fora do backlog oficial (ver comentário em
- * `Sidebar.tsx`).
- *
- * Nota de cor: o título do modal usa no Figma mais um hex solto (`#1c3c2a`),
- * sem variável vinculada (confirmado via `get_variable_defs`) — é o
- * terceiro caso desse tipo encontrado (depois de `#1c3c3a`/`#444441` nos
- * Cards). Mesma decisão: unificado em `Neutro/Dark`. Ver item 6 do
- * `claude/adendo_identidade_visual.md`.
- */
-
-// ---------- Star-Rating ----------
-
 export function StarRating({
   value,
   onChange,
@@ -26,7 +12,6 @@ export function StarRating({
   className,
 }: {
   value: number;
-  /** Omitido = somente leitura (ex.: mostrar uma nota já dada). */
   onChange?: (v: number) => void;
   max?: number;
   className?: string;

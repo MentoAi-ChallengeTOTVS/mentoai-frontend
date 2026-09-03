@@ -14,18 +14,6 @@ import type {
   PrioridadeAlerta,
 } from "@/types/domain";
 
-/**
- * Badges do Design System MentoAI — traduzidos 1:1 dos component sets do
- * Figma (`Badge/Status`, `Badge/Sinal-Neutro`, `Badge/Prioridade`,
- * `Badge/Sinal-{Concorrencia,Oportunidade,Risco-Churn}`,
- * `Badge/Gerado-por-IA`, `Badge/Status-Acesso-{Ativo,Inativo}`).
- *
- * Cada componente recebe diretamente um enum do domínio (StatusProcessamento,
- * TipoSinalComercial, PrioridadeAlerta) em vez do rótulo em português usado
- * no Figma — assim a UI nunca fica fora de sincronia com o backend.
- */
-
-// ---------- Badge/Status (status de processamento da AnaliseIA) ----------
 
 const STATUS_CONFIG: Record<
   StatusProcessamento,

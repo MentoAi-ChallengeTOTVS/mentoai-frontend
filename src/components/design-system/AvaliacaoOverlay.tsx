@@ -6,22 +6,6 @@ import { ModalAvaliarServico } from "./Avaliacao";
 import { ButtonPrimary } from "./Button";
 import { enviarAvaliacao } from "@/services/avaliacao.service";
 
-/**
- * Avaliar o MentoAI (Figma: `Modal/Avaliar-Servico`, 132:1489) — item extra
- * da Sidebar, fora do backlog oficial.
- *
- * Mesmo arranjo da Busca Global (`BuscaGlobalOverlay.tsx`): o modal não é
- * uma rota, é um overlay montado no `layout.tsx` das telas autenticadas e
- * aberto pelo item da Sidebar (que tinha a prop `onOpenAvaliacao` sem
- * ninguém passando — clicar não fazia nada). Este wrapper guarda o estado do
- * formulário e chama o serviço; o `ModalAvaliarServico` continua sendo só a
- * apresentação portada do Figma.
- *
- * O estado de agradecimento depois do envio **não está no Figma** — o frame
- * só desenha o formulário parado. Foi adicionado porque um envio sem
- * confirmação nenhuma some sem deixar rastro, e é a mesma decisão já tomada
- * em Nova Reunião (confirmação depois do envio simulado).
- */
 export function AvaliacaoOverlay({ onClose }: { onClose: () => void }) {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
