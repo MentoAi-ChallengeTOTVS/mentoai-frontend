@@ -5,20 +5,6 @@ import clsx from "clsx";
 import { Star, XCircle } from "lucide-react";
 import { ButtonPrimary } from "./Button";
 
-/**
- * Star-Rating (132:1477) e Modal/Avaliar-Servico (132:1489) — item extra
- * "Avaliar o MentoAI" da Sidebar, fora do backlog oficial (ver comentário em
- * `Sidebar.tsx`).
- *
- * Nota de cor: o título do modal usa no Figma mais um hex solto (`#1c3c2a`),
- * sem variável vinculada (confirmado via `get_variable_defs`) — é o
- * terceiro caso desse tipo encontrado (depois de `#1c3c3a`/`#444441` nos
- * Cards). Mesma decisão: unificado em `Neutro/Dark`. Ver item 6 do
- * `claude/adendo_identidade_visual.md`.
- */
-
-// ---------- Star-Rating ----------
-
 export function StarRating({
   value,
   onChange,
@@ -26,7 +12,6 @@ export function StarRating({
   className,
 }: {
   value: number;
-  /** Omitido = somente leitura (ex.: mostrar uma nota já dada). */
   onChange?: (v: number) => void;
   max?: number;
   className?: string;
@@ -72,6 +57,8 @@ export function ModalAvaliarServico({
   onEnviar,
   onDispensar,
   onClose,
+  enviando = false,
+  erro = null,
   className,
 }: {
   aberto: boolean;
@@ -82,6 +69,14 @@ export function ModalAvaliarServico({
   onEnviar?: () => void;
   onDispensar?: () => void;
   onClose?: () => void;
+  /**
+   * Envio em andamento — desabilita o botão e troca o label. Igual ao
+   * `loading` do `Card/Login-Form`: o frame do Figma só desenha o estado
+   * parado, mas uma tela real precisa do estado de espera.
+   */
+  enviando?: boolean;
+  /** Mensagem de erro do envio, exibida acima das ações. */
+  erro?: string | null;
   className?: string;
 }) {
   if (!aberto) return null;
@@ -92,7 +87,12 @@ export function ModalAvaliarServico({
       data-node-id="132:1489"
       data-name="Modal/Avaliar-Servico"
     >
-      <div className="relative flex w-full max-w-[480px] flex-col items-start gap-6 rounded-xl bg-white p-8 shadow-[0px_8px_12px_rgba(0,0,0,0.1)]">
+      <div
+        className="relative flex w-full max-w-[480px] flex-col items-start gap-6 rounded-xl bg-white p-8 shadow-[0px_8px_12px_rgba(0,0,0,0.1)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Avalie sua experiência com o MentoAI"
+      >
         <button
           type="button"
           onClick={onClose}
@@ -121,10 +121,24 @@ export function ModalAvaliarServico({
         />
 
         <div className="flex w-full flex-col items-center gap-4">
-          <ButtonPrimary className="w-full justify-center py-3.5" onClick={onEnviar}>
-            Enviar avaliação
+          {erro && (
+            <p className="w-full text-caption leading-caption text-sinal-risco-churn">{erro}</p>
+          )}
+          {/* Sem nota escolhida não há o que enviar — o comentário sozinho não
+              é uma avaliação. Enquanto isso o botão fica desabilitado. */}
+          <ButtonPrimary
+            className="w-full justify-center py-3.5"
+            onClick={onEnviar}
+            disabled={enviando || nota < 1}
+          >
+            {enviando ? "Enviando..." : "Enviar avaliação"}
           </ButtonPrimary>
-          <button type="button" onClick={onDispensar} className="text-corpo text-neutro-muted">
+          <button
+            type="button"
+            onClick={onDispensar}
+            disabled={enviando}
+            className="text-corpo text-neutro-muted disabled:opacity-50"
+          >
             Agora não
           </button>
         </div>

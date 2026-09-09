@@ -3,11 +3,7 @@
 import clsx from "clsx";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-/**
- * Button/Primary (Figma node 15:230) — pílula verde-menta, ícone opcional +
- * label. O Figma mostra o exemplo "Novo cliente" com ícone de "+", mas o
- * componente é genérico (usado também em "Enviar avaliação", "Salvar", etc.).
- */
+
 export function ButtonPrimary({
   children,
   icon,
