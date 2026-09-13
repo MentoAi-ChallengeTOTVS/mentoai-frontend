@@ -1,47 +1,78 @@
-import type { AlertaUsuario } from "@/types/domain";
-import { MOCK_ALERTAS_USUARIO } from "@/mocks/alertas";
+import type { PrioridadeAlerta } from "@/types/domain";
+import type { AlertaResponse, AlertaUsuarioResponse, SpringPage } from "@/types/api";
+import { chamarApi } from "./api";
 
 /**
  * Camada de serviço — bounded context Alertas (`Alerta`, `AlertaUsuario`).
  *
- * Mesmo racional de `clientes.service.ts`/`reunioes.service.ts`: hoje envolve
- * os mocks de `src/mocks/alertas.ts`, mas a assinatura já é a que uma chamada
- * `fetch` real teria — trocar mock por API significa reescrever só o corpo
- * destas funções, sem tocar na tela.
+ * A partir de 13/09/2026 chama a API real (`AlertaController` do backend,
+ * branch `dev`) via `chamarApi`. O "view model" mudou de `AlertaUsuario`
+ * (domain.ts, cadeia aninhada `alerta.sinalComercial.analise.reuniao.
+ * cliente`) pra `AlertaListItem`, mais plano — ver o GAP documentado abaixo
+ * sobre por que a cadeia até o cliente não dá pra reconstruir hoje.
  */
 
-/**
- * Lista os alertas do usuário logado, já combinados com o sinal comercial de
- * origem (e, por tabela, com a análise/reunião/cliente encadeados). É um
- * "view model" de propósito, mesmo padrão de `listarReunioesComStatus`: a
- * tela precisa do nome do cliente em cada linha e não deveria fazer uma
- * chamada extra por alerta pra descobrir isso.
- *
- * Sem parâmetro de usuário porque não há sessão real ainda — o endpoint real
- * deduz o usuário do token e devolve só os alertas dele.
- *
- * Ordenação: mais recentes primeiro (já vem assim do mock). Filtro de
- * prioridade/leitura continua client-side, mesmo comportamento das outras
- * listagens.
- *
- * Endpoint esperado: `GET /api/alertas`
- */
-export async function listarAlertas(): Promise<AlertaUsuario[]> {
-  return MOCK_ALERTAS_USUARIO;
+export interface AlertaListItem {
+  /** Id do `Alerta` (não de `AlertaUsuario`) — é o que `GET /api/v1/alertas` devolve. */
+  id: number;
+  motivo: string;
+  prioridade: PrioridadeAlerta;
+  criacao: string;
+  /**
+   * Local ao cliente, não vem do backend: `GET /api/v1/alertas` devolve
+   * `Alerta`, não `AlertaUsuario` (não tem campo `lido`/`lidoEm` por
+   * usuário). Sem endpoint de listagem por usuário ainda, a marcação de
+   * lido feita aqui é otimista e não sobrevive a um F5 — mesma limitação já
+   * documentada nas outras telas, só que agora a chamada de marcar-como-lido
+   * em si é real (ver `marcarComoLido`).
+   */
+  lido: boolean;
+}
+
+function toAlertaListItem(dto: AlertaResponse): AlertaListItem {
+  return { id: dto.id, motivo: dto.motivo, prioridade: dto.prioridade, criacao: dto.criacao, lido: false };
 }
 
 /**
- * Marca um alerta como lido. Sem persistência real — sem estado global entre
- * rotas (gap já documentado nas outras telas), a marcação vale só pro state
- * local da tela e não sobrevive a um F5. Quem chama atualiza o estado
- * otimisticamente antes de aguardar esta função.
+ * Lista os alertas mais recentes.
  *
- * O id é o de `AlertaUsuario` (a junção alerta↔usuário), não o do `Alerta` —
- * é a linha de leitura que muda, não o alerta em si, que é o mesmo pra todos
- * os destinatários.
- *
- * Endpoint esperado: `PATCH /api/alertas/{alertaUsuarioId}/lido`
+ * GAP conhecido: `AlertaResponse` só traz `sinalComercialId` — reconstruir o
+ * nome do cliente exigiria `SinalComercial -> analiseId -> AnaliseIA ->
+ * reuniaoId -> Reuniao -> clienteId -> Cliente`, mas não existe endpoint
+ * público pra buscar um `SinalComercial` por id (só `SinalComercialService`
+ * interno, sem controller) — o encadeamento trava no primeiro passo. Por
+ * isso a Central de Alertas não mostra mais o nome do cliente por linha (só
+ * motivo/prioridade/data); um jeito simples de destravar isso no backend
+ * seria o próprio `AlertaResponse` já vir com `clienteId`/`clienteNome`
+ * resolvidos, mesmo padrão que `AnaliseFilaItemResponse` já usa pra fila.
+ * Endpoint: `GET /api/v1/alertas?page=0&size=50&sort=criacao,desc`
  */
-export async function marcarComoLido(alertaUsuarioId: number): Promise<void> {
-  void alertaUsuarioId;
+export async function listarAlertas(): Promise<AlertaListItem[]> {
+  const pagina = await chamarApi<SpringPage<AlertaResponse>>(
+    "/api/v1/alertas?page=0&size=50&sort=criacao,desc",
+    { cache: "no-store" }
+  );
+  return pagina.content.map(toAlertaListItem);
+}
+
+/**
+ * Marca um alerta como lido. Quem chama atualiza o estado local
+ * otimisticamente antes de aguardar esta função (mesmo padrão de antes).
+ *
+ * Nota sobre o id: o endpoint real (`PATCH /api/v1/alertas/{id}/lido`)
+ * resolve `{id}` internamente como o id de `AlertaUsuario`
+ * (`AlertaUsuarioService.marcarComoLido`), não o de `Alerta` — mas
+ * `GET /api/v1/alertas` (e portanto esta tela) só expõe ids de `Alerta`, e é
+ * esse id que a collection (`PATCH .../alertas/1/lido` logo após
+ * `GET .../alertas/1`) usa como exemplo. Ou seja: hoje há uma divergência
+ * entre o que o path da rota sugere e o que o serviço espera — vale
+ * confirmar com quem mantém o backend qual dos dois ids este endpoint
+ * deveria aceitar antes de depender disso em produção.
+ * Endpoint: `PATCH /api/v1/alertas/{id}/lido`
+ */
+export async function marcarComoLido(alertaId: number): Promise<void> {
+  await chamarApi<AlertaUsuarioResponse>(`/api/v1/alertas/${alertaId}/lido`, {
+    method: "PATCH",
+    cache: "no-store",
+  });
 }

@@ -7,11 +7,15 @@ import {
   Sparkles,
   CloudLightning,
   Minus,
+  TrendingUp,
+  Compass,
 } from "lucide-react";
 import type {
   StatusProcessamento,
   TipoSinalComercial,
   PrioridadeAlerta,
+  TipoInsight,
+  Severidade,
 } from "@/types/domain";
 
 
@@ -173,6 +177,93 @@ export function BadgePrioridade({
       <span className="text-[11px] leading-none whitespace-nowrap text-neutro-background">
         {cfg.label}
       </span>
+    </div>
+  );
+}
+
+// ---------- Badge/Severidade (Insight.severidade) ----------
+// Mesmos 3 valores/labels/cores de Badge/Prioridade (BAIXA/MEDIA/ALTA) — o
+// Manual de Identidade Visual não define uma paleta própria pra severidade
+// de insight, então reaproveitamos a semântica de urgência já usada em
+// Alertas em vez de inventar uma cor nova pro mesmo significado.
+
+export function BadgeSeveridade({
+  nivel,
+  className,
+}: {
+  nivel: Severidade;
+  className?: string;
+}) {
+  const cfg = PRIORIDADE_CONFIG[nivel];
+  return (
+    <div
+      className={clsx(
+        "inline-flex items-center justify-center rounded-xl px-2 py-[3px]",
+        cfg.className,
+        className
+      )}
+      data-name="Badge/Severidade"
+    >
+      <span className="text-[11px] leading-none whitespace-nowrap text-neutro-background">
+        {cfg.label}
+      </span>
+    </div>
+  );
+}
+
+// ---------- Badge/Tipo-Insight (Insight.tipo) — Card/Insights (Detalhe da Reunião) ----------
+// Sem frame no Figma pra este badge (a seção Insights não existia na tela
+// antes de 13/09/2026, ver nota em `reunioes/[id]/page.tsx`) — cores
+// escolhidas seguindo o mesmo vocabulário semântico já usado nos outros
+// badges de sinal: risco em vermelho, oportunidade em verde. Tendência e
+// Estratégico não têm cor de sinal fixa documentada no manual; usamos
+// alerta (âmbar) e navy respectivamente, sempre com ícone + texto.
+
+const INSIGHT_CONFIG: Record<
+  TipoInsight,
+  { label: string; className: string; icon: React.ReactNode }
+> = {
+  RISCO: {
+    label: "Risco",
+    className: "bg-sinal-risco-churn text-white",
+    icon: <AlertTriangle className="size-3" />,
+  },
+  OPORTUNIDADE: {
+    label: "Oportunidade",
+    className: "bg-sinal-oportunidade text-white",
+    icon: <Sparkles className="size-3" />,
+  },
+  TENDENCIA: {
+    label: "Tendência",
+    className: "bg-sinal-alerta text-white",
+    icon: <TrendingUp className="size-3" />,
+  },
+  ESTRATEGICO: {
+    label: "Estratégico",
+    className: "bg-navy text-white",
+    icon: <Compass className="size-3" />,
+  },
+};
+
+export function BadgeTipoInsight({
+  tipo,
+  className,
+}: {
+  tipo: TipoInsight;
+  className?: string;
+}) {
+  const cfg = INSIGHT_CONFIG[tipo];
+  return (
+    <div
+      className={clsx(
+        "inline-flex h-6 items-center gap-1.5 rounded-xl px-2 py-1",
+        cfg.className,
+        className
+      )}
+      data-name={`Badge/Insight-${tipo}`}
+    >
+      {cfg.icon}
+      <span className="text-caption leading-caption whitespace-nowrap">{cfg.label}</span>
     </div>
   );
 }

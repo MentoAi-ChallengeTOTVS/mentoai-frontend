@@ -5,6 +5,7 @@ import { BadgeStatus } from "@/components/design-system/Badges";
 import {
   CardResumoExecutivo,
   CardSinaisComerciais,
+  CardInsights,
   CardHistoricoAnalises,
 } from "@/components/design-system/Cards";
 import { buscarDetalheReuniao } from "@/services/reunioes.service";
@@ -50,7 +51,7 @@ export default async function DetalheReuniaoPage({
 
   if (!detalhe) notFound();
 
-  const { reuniao, analise, sinais } = detalhe;
+  const { reuniao, analise, sinais, insights } = detalhe;
   const status = analise?.statusProcessamento ?? "PENDENTE";
 
   return (
@@ -92,6 +93,7 @@ export default async function DetalheReuniaoPage({
         <>
           <CardResumoExecutivo resumoExecutivo={analise.resumoExecutivo} />
           {sinais.length > 0 && <CardSinaisComerciais sinais={sinais} />}
+          {insights.length > 0 && <CardInsights insights={insights} />}
         </>
       ) : status === "ERRO" && analise ? (
         <div className="flex w-full items-start gap-4 rounded-lg border border-sinal-risco-churn bg-sinal-risco-churn/[0.06] p-6">

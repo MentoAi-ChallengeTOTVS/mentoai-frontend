@@ -1,4 +1,16 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+/**
+ * No servidor (Server Components / SSR, dentro do container do frontend),
+ * "localhost" aponta pro próprio container do frontend, não pro backend —
+ * por isso usamos API_INTERNAL_URL (env var só de runtime, sem prefixo
+ * NEXT_PUBLIC_, então não é "gravada" no bundle) apontando pro serviço
+ * `backend` do docker-compose. No navegador, continua usando
+ * NEXT_PUBLIC_API_URL (localhost:8080, que é a porta publicada no host).
+ */
+const API_URL = (
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL
+    : process.env.NEXT_PUBLIC_API_URL
+)?.replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(
@@ -53,4 +65,25 @@ export async function chamarApi<T>(
   }
 
   return body as T;
+}
+
+/**
+ * Como `chamarApi`, mas devolve `null` em 404 em vez de lançar — útil pros
+ * "buscar X por id" onde "não encontrado" é um resultado válido (quem chama
+ * decide se isso vira `notFound()`, mensagem de erro, etc.), não uma
+ * exceção a tratar em todo lugar que busca por id.
+ *
+ * Exemplo:
+ * `chamarApiOuNull<Cliente>("/api/v1/clientes/999")` -> `null`, sem lançar.
+ */
+export async function chamarApiOuNull<T>(
+  caminho: string,
+  opcoes: RequestInit = {}
+): Promise<T | null> {
+  try {
+    return await chamarApi<T>(caminho, opcoes);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
 }
