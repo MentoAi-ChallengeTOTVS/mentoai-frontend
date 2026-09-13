@@ -30,7 +30,7 @@ import type { Cliente, PerfilUsuario, Reuniao, StatusProcessamento, Usuario } fr
 
 // ---------- Sub-componentes internos compartilhados (Cadastro-Cliente / Editar-Usuario) ----------
 
-function PanelHeader({ titulo, onClose }: { titulo: string; onClose?: () => void }) {
+function PanelHeader({ titulo, onClose, disabled = false }: { titulo: string; onClose?: () => void; disabled?: boolean }) {
   return (
     <div className="flex w-full items-center justify-between">
       <p className="text-subtitulo font-medium text-navy">{titulo}</p>
@@ -38,6 +38,7 @@ function PanelHeader({ titulo, onClose }: { titulo: string; onClose?: () => void
         type="button"
         onClick={onClose}
         aria-label="Fechar"
+        disabled={disabled}
         className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutro-background"
       >
         <X className="size-3.5 text-neutro-dark" />
@@ -98,11 +99,12 @@ function CampoSelect({
   );
 }
 
-function BotaoCancelar({ onClick, className }: { onClick?: () => void; className?: string }) {
+function BotaoCancelar({ onClick, className, disabled = false }: { onClick?: () => void; className?: string; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={clsx(
         "flex h-10 flex-1 items-center justify-center rounded-md border border-neutro-border text-corpo text-sidebar-muted-2",
         className
@@ -400,7 +402,7 @@ export interface EditarUsuarioInput {
   nome: string;
   email: string;
   perfil: PerfilUsuario;
-  /** Vazio = manter a senha atual (regra vinda do texto de apoio do Figma). Obrigatória na criação. */
+  /** Obrigatória para criar ou atualizar dados; status é salvo separadamente. */
   senha?: string;
   ativo: boolean;
 }
@@ -444,22 +446,16 @@ function StatusDotLabel({ ativo }: { ativo: boolean }) {
 }
 
 export function PanelEditarUsuario({
-  /**
-   * Quando ausente, o painel abre em modo de criação (campos vazios, título
-   * "Novo usuário", senha obrigatória) — reaproveitado pela tela de
-   * Usuários (issue #61) pra cobrir "cadastro/edição" com um único painel,
-   * mesmo padrão adotado em `PanelCadastroCliente` (issue #64).
-   */
-  usuario,
-  onClose,
-  onCancel,
-  onSubmit,
-  className,
+  usuario, onClose, onCancel, onSubmit, onSalvarStatus, salvando = false, erro = null, aviso = null, className,
 }: {
   usuario?: Usuario;
   onClose?: () => void;
   onCancel?: () => void;
-  onSubmit?: (data: EditarUsuarioInput) => void;
+  onSubmit?: (data: EditarUsuarioInput) => void | Promise<void>;
+  onSalvarStatus?: (ativo: boolean) => void | Promise<void>;
+  salvando?: boolean;
+  erro?: string | null;
+  aviso?: string | null;
   className?: string;
 }) {
   const [nome, setNome] = useState(usuario?.nome ?? "");
@@ -467,64 +463,48 @@ export function PanelEditarUsuario({
   const [perfil, setPerfil] = useState<PerfilUsuario>(usuario?.perfil ?? "EXECUTIVO_COMERCIAL");
   const [senha, setSenha] = useState("");
   const [ativo, setAtivo] = useState(usuario?.ativo ?? true);
+  const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const criando = !usuario;
 
+  function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    if (salvando) return;
+    if (!nome.trim() || !email.trim() || !senha.trim()) {
+      setErroValidacao("Nome, e-mail e senha são obrigatórios.");
+      return;
+    }
+    setErroValidacao(null);
+    void onSubmit?.({ id: usuario?.id, nome, email, perfil, senha, ativo });
+  }
+
   return (
-    <div
-      className={clsx(
-        "flex h-full w-full flex-col items-start gap-6 overflow-y-auto border-l border-neutro-border bg-white p-6 shadow-[-4px_0px_8px_rgba(0,0,0,0.1)]",
-        className
-      )}
-      data-node-id="91:1167"
-      data-name="Panel/Editar-Usuario"
-    >
-      <PanelHeader titulo={criando ? "Novo usuário" : "Editar usuário"} onClose={onClose} />
-      <div className="flex w-full flex-col items-start gap-4">
-        <CampoTexto label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-        <CampoTexto
-          label="E-mail"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <CampoSelect
-          label="Perfil de Acesso"
-          value={perfil}
-          onChange={(e) => setPerfil(e.target.value as PerfilUsuario)}
-          options={PERFIL_OPCOES}
-        />
-        <div className="flex w-full flex-col items-start gap-2">
-          <CampoTexto
-            label="Senha"
-            type="password"
-            placeholder="••••••••"
-            required={criando}
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-          />
-          <p className="text-caption leading-caption text-neutro-muted">
-            {criando ? "Senha inicial do usuário" : "Deixe em branco para manter a senha atual"}
-          </p>
+    <div className={clsx("flex h-full w-full flex-col items-start gap-6 overflow-y-auto border-l border-neutro-border bg-white p-6 shadow-[-4px_0px_8px_rgba(0,0,0,0.1)]", className)}
+      role="dialog" aria-modal="true" aria-label={criando ? "Novo usuário" : "Editar usuário"} data-node-id="91:1167" data-name="Panel/Editar-Usuario">
+      <PanelHeader titulo={criando ? "Novo usuário" : "Editar usuário"} onClose={onClose} disabled={salvando} />
+      {aviso && <p role="status" className="text-caption text-menta">{aviso}</p>}
+      <form onSubmit={enviar} className="flex w-full flex-col gap-4">
+        <fieldset disabled={salvando} className="flex min-w-0 flex-col gap-4">
+          <CampoTexto label="Nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
+          <CampoTexto label="E-mail" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <CampoSelect label="Perfil de Acesso" value={perfil} onChange={(e) => {
+            const value = e.target.value;
+            if (value === "DIRETOR_COMERCIAL" || value === "EXECUTIVO_COMERCIAL") setPerfil(value);
+          }} options={PERFIL_OPCOES} />
+          <CampoTexto label="Senha" type="password" autoComplete="new-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+          <p className="text-caption text-neutro-muted">Informe a senha que será definida para este usuário.</p>
+        </fieldset>
+        {(erro || erroValidacao) && <p role="alert" className="text-caption text-sinal-risco-churn">{erro || erroValidacao}</p>}
+        <div className="flex w-full gap-3 pt-3">
+          <BotaoCancelar onClick={onCancel} disabled={salvando} />
+          <ButtonPrimary type="submit" disabled={salvando || !onSubmit} className="flex-1 justify-center">{salvando ? "Salvando..." : criando ? "Criar usuário" : "Salvar dados"}</ButtonPrimary>
         </div>
-        <div className="flex flex-col items-start gap-2">
-          <span className="text-[12px] font-medium leading-4 text-neutro-muted">Status</span>
-          <div className="flex items-center gap-3">
-            <ToggleAtivo checked={ativo} onChange={setAtivo} />
-            <StatusDotLabel ativo={ativo} />
-          </div>
-        </div>
-      </div>
-      <div className="flex w-full items-start gap-3 pt-3">
-        <BotaoCancelar onClick={onCancel} />
-        <ButtonPrimary
-          className="flex-1 justify-center"
-          onClick={() =>
-            onSubmit?.({ id: usuario?.id, nome, email, perfil, senha: senha || undefined, ativo })
-          }
-        >
-          Salvar
-        </ButtonPrimary>
-      </div>
+      </form>
+      {!criando && <fieldset disabled={salvando} className="flex w-full flex-col gap-3 border-t border-neutro-border pt-4">
+        <legend className="text-legenda text-navy">Status do usuário</legend>
+        <div className="flex items-center gap-3"><ToggleAtivo checked={ativo} onChange={setAtivo} /><StatusDotLabel ativo={ativo} /></div>
+        <p className="text-caption text-neutro-muted">A alteração de status não exige senha.</p>
+        <ButtonPrimary disabled={salvando || ativo === usuario.ativo || !onSalvarStatus} onClick={() => { setErroValidacao(null); void onSalvarStatus?.(ativo); }} className="justify-center">Salvar status</ButtonPrimary>
+      </fieldset>}
     </div>
   );
 }

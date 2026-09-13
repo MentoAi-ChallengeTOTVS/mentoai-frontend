@@ -7,9 +7,8 @@
  * `domain.ts` documenta as entidades DDD tal como o time desenhou — com
  * relações aninhadas (`Reuniao.cliente: Cliente`, `AnaliseIA.reuniao:
  * Reuniao`, etc.) — mas vários endpoints reais devolvem chaves estrangeiras
- * (`clienteId`, `analiseId`...), não objetos aninhados. `Cliente` é a
- * exceção: bate campo a campo com `ClienteResponse` (por isso os services
- * chamam `chamarApi<Cliente>(...)` direto, sem DTO próprio aqui) — os
+ * (`clienteId`, `analiseId`...), não objetos aninhados. ClienteResponse
+ * também inclui status, ausente no tipo conceitual Cliente. Os
  * outros tipos abaixo existem só onde `domain.ts` não serve pra tipar a
  * resposta crua da API; os services combinam esses DTOs pra reconstruir o
  * formato que as telas/design system esperam.
@@ -17,11 +16,45 @@
 
 import type {
   PrioridadeAlerta,
+  PerfilUsuario,
   SentimentoGeral,
   StatusProcessamento,
   TipoInsight,
   TipoSinalComercial,
 } from "./domain";
+
+export interface ClienteResponse {
+  id: number;
+  nome: string;
+  segmento: string;
+  porte: string;
+  criacao: string;
+  status: boolean;
+}
+
+export interface UsuarioResponse {
+  id: number;
+  nome: string;
+  email: string;
+  perfil: PerfilUsuario;
+  ativo: boolean;
+  criacao: string;
+  atualizacao: string;
+}
+
+export interface SalvarUsuarioRequest {
+  nome: string;
+  email: string;
+  senha: string;
+  perfil: PerfilUsuario;
+}
+
+export interface UploadTranscricaoResponse {
+  reuniaoId: number;
+  transcricaoId: number;
+  analiseId: number;
+  status: "PENDENTE";
+}
 
 /** Página no formato que `ClienteController.listar` devolve (não é o `Page<T>` padrão do Spring, é um shape próprio do backend). */
 export interface ClientePageResponse<T> {

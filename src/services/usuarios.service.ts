@@ -1,51 +1,26 @@
-import type { PerfilUsuario, Usuario } from "@/types/domain";
-import { MOCK_USUARIOS } from "@/mocks/usuarios";
+import type { SalvarUsuarioRequest, SpringPage, UsuarioResponse } from "@/types/api";
+import { chamarApi } from "./api";
 
-/**
- * Camada de serviço — bounded context Usuário e Acesso (entidade `Usuario`).
- * Mesmo racional de `clientes.service.ts`: hoje devolve mock, formato já
- * pronto pra virar `fetch` real.
- */
-
-/**
- * Lista todos os usuários.
- * Endpoint esperado: `GET /api/usuarios` (restrito a `DIRETOR_COMERCIAL` —
- * a tela `usuarios/page.tsx` já bloqueia acesso por perfil no frontend, mas
- * o backend deve aplicar a mesma regra na API).
- */
-export async function listarUsuarios(): Promise<Usuario[]> {
-  return MOCK_USUARIOS;
+export function listarUsuarios(pagina = 0, signal?: AbortSignal): Promise<SpringPage<UsuarioResponse>> {
+  const params = new URLSearchParams({ page: String(pagina), size: "5", sort: "nome,asc" });
+  return chamarApi<SpringPage<UsuarioResponse>>(`/api/v1/usuarios?${params}`, { cache: "no-store", signal });
 }
 
-/** Dado de formulário pra criar/editar usuário (mesmo formato de `PanelEditarUsuario`). */
-export interface NovoUsuarioInput {
-  nome: string;
-  email: string;
-  perfil: PerfilUsuario;
-  /** Vazio/ausente na edição = manter a senha atual. Obrigatória na criação. */
-  senha?: string;
-  ativo: boolean;
+function corpoUsuario({ nome, email, senha, perfil }: SalvarUsuarioRequest): string {
+  if (!nome.trim() || !email.trim() || !senha.trim()) throw new Error("Nome, e-mail e senha são obrigatórios.");
+  if (perfil !== "EXECUTIVO_COMERCIAL" && perfil !== "DIRETOR_COMERCIAL") throw new Error("Perfil inválido.");
+  return JSON.stringify({ nome: nome.trim(), email: email.trim(), senha, perfil });
 }
 
-/**
- * Cria um usuário novo. Sem persistência real (mesmo gap documentado nas
- * outras telas).
- * Endpoint esperado: `POST /api/usuarios`
- */
-export async function criarUsuario(dados: NovoUsuarioInput): Promise<Usuario> {
-  const { senha: _senha, ...resto } = dados;
-  void _senha;
-  const agora = new Date().toISOString();
-  return { id: Date.now(), criacao: agora, atualizacao: agora, ...resto };
+export function criarUsuario(dados: SalvarUsuarioRequest): Promise<UsuarioResponse> {
+  return chamarApi<UsuarioResponse>("/api/v1/usuarios", { method: "POST", body: corpoUsuario(dados) });
 }
 
-/**
- * Atualiza um usuário existente. Devolve `void` — quem chama já tem os
- * dados atualizados em mãos (mesmo racional de `clientes.service.
- * atualizarCliente`).
- * Endpoint esperado: `PUT /api/usuarios/{id}`
- */
-export async function atualizarUsuario(id: number, dados: NovoUsuarioInput): Promise<void> {
-  void id;
-  void dados;
+/** PUT e PATCH confirmados no controller do backend dev; ainda ausentes na collection. */
+export function atualizarUsuario(id: number, dados: SalvarUsuarioRequest): Promise<UsuarioResponse> {
+  return chamarApi<UsuarioResponse>(`/api/v1/usuarios/${id}`, { method: "PUT", body: corpoUsuario(dados) });
+}
+
+export function alterarStatusUsuario(id: number, ativo: boolean): Promise<UsuarioResponse> {
+  return chamarApi<UsuarioResponse>(`/api/v1/usuarios/${id}/status`, { method: "PATCH", body: JSON.stringify({ ativo }) });
 }

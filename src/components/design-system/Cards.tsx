@@ -46,11 +46,15 @@ export function CardUploadTranscricao({
   onFilesSelected,
   acceptDescription = "Formatos aceitos: .txt, .docx, .pdf, .srt",
   accept = ".txt,.docx,.pdf,.srt",
+  multiple = true,
+  disabled = false,
   className,
 }: {
   onFilesSelected?: (files: FileList) => void;
   acceptDescription?: string;
   accept?: string;
+  multiple?: boolean;
+  disabled?: boolean;
   className?: string;
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -59,23 +63,24 @@ export function CardUploadTranscricao({
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={() => inputRef.current?.click()}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (!disabled && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           inputRef.current?.click();
         }
       }}
       onDragOver={(e) => {
         e.preventDefault();
-        setIsDragging(true);
+        if (!disabled) setIsDragging(true);
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={(e) => {
         e.preventDefault();
         setIsDragging(false);
-        if (e.dataTransfer.files.length) onFilesSelected?.(e.dataTransfer.files);
+        if (!disabled && e.dataTransfer.files.length) onFilesSelected?.(e.dataTransfer.files);
       }}
       className={clsx(
         "flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-menta-clara bg-menta-suave p-10 text-center transition-colors",
@@ -89,7 +94,8 @@ export function CardUploadTranscricao({
         ref={inputRef}
         type="file"
         accept={accept}
-        multiple
+        multiple={multiple}
+        disabled={disabled}
         className="hidden"
         onChange={(e) => e.target.files && onFilesSelected?.(e.target.files)}
       />

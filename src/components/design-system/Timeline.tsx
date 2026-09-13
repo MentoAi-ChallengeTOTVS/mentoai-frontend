@@ -26,7 +26,7 @@ export function ItemTimelineReuniao({
 }: {
   reuniao: Pick<Reuniao, "dataReuniao">;
   resumo: string;
-  status: StatusProcessamento;
+  status?: StatusProcessamento;
   /** Esconde a linha conectora — usar no último item da lista. */
   ultimo?: boolean;
   className?: string;
@@ -47,7 +47,7 @@ export function ItemTimelineReuniao({
             <Calendar className="size-3.5 text-neutro-muted" />
             <span className="text-legenda text-neutro-muted">{formatData(reuniao.dataReuniao)}</span>
           </div>
-          <BadgeStatus status={status} />
+          {status ? <BadgeStatus status={status} /> : <span className="text-caption text-neutro-muted">Análise indisponível</span>}
         </div>
         <p className="w-full text-corpo text-neutro-dark">{resumo}</p>
       </div>

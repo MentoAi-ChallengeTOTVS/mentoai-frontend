@@ -1,86 +1,58 @@
-import type { Cliente, Reuniao, SinalComercial, StatusProcessamento } from "@/types/domain";
-import { MOCK_ANALISES } from "@/mocks/reunioes";
-import {
-  reunioesDoCliente,
-  resumoTimelineDaReuniao,
-  sinaisRiscoDoCliente,
-  oportunidadesDoCliente,
-  resumoEstrategicoDoCliente,
-  sugestoesJaGeradasDoCliente,
-  gerarSugestoesEstrategicasDoCliente,
-  type SugestaoEstrategica,
-} from "@/mocks/perfilCliente";
-import { buscarClientePorId } from "./clientes.service";
+import type { AnaliseIAResponse, ClienteResponse, ReuniaoResponse } from "@/types/api";
+import { chamarApi, chamarApiOuNull } from "./api";
 
-export type { SugestaoEstrategica } from "@/mocks/perfilCliente";
-
-/**
- * Camada de serviço pra tela Perfil do Cliente / Visão 360° (issues
- * #65/#86/#101). Diferente de `clientes.service.ts`/`reunioes.service.ts`,
- * não existe uma entidade de domínio própria pra "perfil de cliente" — é
- * uma agregação sobre `Cliente`/`Reuniao`/`SinalComercial` já existentes
- * (ver gap de domínio documentado em `src/mocks/perfilCliente.ts` e em
- * `claude/decisoes_tecnicas_stack.md`).
- *
- * `buscarPerfilCliente` devolve tudo que a tela precisa numa chamada só —
- * é razoável esperar um endpoint agregado assim pra uma tela de "visão
- * 360°" (evita a tela ter que orquestrar 4-5 chamadas separadas). A
- * "geração" de sugestões estratégicas (ação do usuário, não carga inicial)
- * fica numa função à parte, `gerarSugestoesEstrategicas`, pensada como uma
- * chamada `POST` independente.
- */
-
+/** View model local, composto de endpoints reais; não é um DTO agregado HTTP. */
 export interface ItemTimelineData {
-  reuniao: Reuniao;
-  resumo: string;
-  status: StatusProcessamento;
+  reuniao: ReuniaoResponse;
+  analise: AnaliseIAResponse | null;
+  falhaConsulta: boolean;
 }
 
 export interface PerfilClienteData {
-  cliente: Cliente;
+  cliente: ClienteResponse;
   timeline: ItemTimelineData[];
-  riscos: SinalComercial[];
-  oportunidades: SinalComercial[];
-  resumoEstrategico: string;
-  sugestoesIniciais: SugestaoEstrategica[] | null;
+  resumoPrincipal: { texto: string; reuniaoId: number; dataReuniao: string } | null;
+  analisesIncompletas: boolean;
 }
 
-/**
- * Busca todos os dados da Visão 360° de um cliente. Devolve `null` se o
- * cliente não existir.
- * Endpoint esperado: `GET /api/clientes/{id}/perfil`
- */
 export async function buscarPerfilCliente(clienteId: number): Promise<PerfilClienteData | null> {
-  const cliente = await buscarClientePorId(clienteId);
+  const cliente = await chamarApiOuNull<ClienteResponse>(`/api/v1/clientes/${clienteId}`, { cache: "no-store" });
   if (!cliente) return null;
-
-  const timeline: ItemTimelineData[] = reunioesDoCliente(clienteId).map((reuniao) => ({
-    reuniao,
-    resumo: resumoTimelineDaReuniao(reuniao.id),
-    status: MOCK_ANALISES[reuniao.id]?.statusProcessamento ?? "PENDENTE",
-  }));
-
+  const reunioes = await chamarApi<ReuniaoResponse[]>(`/api/v1/clientes/${clienteId}/reunioes`, { cache: "no-store" });
+  reunioes.sort((a, b) => b.dataReuniao.localeCompare(a.dataReuniao) || b.id - a.id);
+  const resultados = await Promise.allSettled(reunioes.map((r) =>
+    chamarApiOuNull<AnaliseIAResponse>(`/api/v1/analises/reuniao/${r.id}`, { cache: "no-store" })
+  ));
+  const timeline = reunioes.map((reuniao, i): ItemTimelineData => {
+    const resultado = resultados[i];
+    return {
+      reuniao,
+      analise: resultado.status === "fulfilled" ? resultado.value : null,
+      falhaConsulta: resultado.status === "rejected",
+    };
+  });
+  const principal = timeline.find((item) =>
+    item.analise?.statusProcessamento === "PROCESSADA" && item.analise.resumoExecutivo?.trim()
+  );
   return {
     cliente,
     timeline,
-    riscos: sinaisRiscoDoCliente(clienteId),
-    oportunidades: oportunidadesDoCliente(clienteId),
-    resumoEstrategico: resumoEstrategicoDoCliente(clienteId, cliente.nome),
-    sugestoesIniciais: sugestoesJaGeradasDoCliente(clienteId),
+    resumoPrincipal: principal?.analise ? {
+      texto: principal.analise.resumoExecutivo,
+      reuniaoId: principal.reuniao.id,
+      dataReuniao: principal.reuniao.dataReuniao,
+    } : null,
+    analisesIncompletas: timeline.some((item) => item.falhaConsulta),
   };
 }
 
-/**
- * Gera (ou atualiza) as sugestões estratégicas de um cliente — ação
- * disparada pelo botão "Gerar sugestões"/"Atualizar sugestões" (issue
- * #101). Separada de `buscarPerfilCliente` porque, no mundo real, é uma
- * chamada de IA sob demanda (potencialmente lenta/assíncrona), não parte
- * da carga inicial da página.
- * Endpoint esperado: `POST /api/clientes/{id}/sugestoes-estrategicas`
- */
-export async function gerarSugestoesEstrategicas(
-  clienteId: number,
-  nomeCliente: string
-): Promise<SugestaoEstrategica[]> {
-  return gerarSugestoesEstrategicasDoCliente(clienteId, nomeCliente);
+export function resumoDoItem({ analise, falhaConsulta }: ItemTimelineData): string {
+  if (falhaConsulta) return "Não foi possível carregar a análise desta reunião.";
+  if (!analise) return "Análise ainda não disponível.";
+  switch (analise.statusProcessamento) {
+    case "PENDENTE": return "Análise aguardando processamento.";
+    case "PROCESSANDO": return "Análise em processamento.";
+    case "ERRO": return analise.mensagemErro || "Ocorreu um erro no processamento da análise.";
+    case "PROCESSADA": return analise.resumoExecutivo?.trim() || "Análise processada sem resumo disponível.";
+  }
 }

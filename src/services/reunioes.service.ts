@@ -5,6 +5,7 @@ import type {
   InsightResponse,
   ReuniaoResponse,
   SinalComercialResponse,
+  UploadTranscricaoResponse,
 } from "@/types/api";
 import { chamarApi, chamarApiOuNull } from "./api";
 import { buscarClientePorId, listarClientes } from "./clientes.service";
@@ -17,8 +18,7 @@ import { buscarClientePorId, listarClientes } from "./clientes.service";
  * nesta rodada (Fila de Processamento, Listar Reuniões, Detalhe da Reunião)
  * chamam a API real (`mentoai-api`, branch `dev`) via `chamarApi`/
  * `chamarApiOuNull` (`services/api.ts`) em vez dos mocks de
- * `src/mocks/reunioes.ts`. `enviarTranscricao` (Nova Reunião) continua mock —
- * fora do escopo desta rodada.
+ * `src/mocks/reunioes.ts`. O upload também usa a API real via FormData.
  */
 
 // ---------- Reconstrução de `Reuniao` (domain.ts) a partir dos DTOs planos da API ----------
@@ -180,22 +180,36 @@ export async function listarFilaProcessamento(): Promise<AnaliseFilaResponse> {
 // ---------- Nova Reunião — envio de transcrição (issue #70) ----------
 
 export interface EnvioTranscricao {
+  arquivo: File;
   clienteId: number;
-  data: string;
-  nomeArquivo: string;
-  tamanhoBytes: number;
+  usuarioId: number;
+  dataReuniao: string;
+  duracaoMinutos: number;
 }
 
 /**
- * Envia uma transcrição para análise. Ainda mock — fora do escopo das 4
- * telas atribuídas nesta rodada. O backend já expõe um endpoint de upload
- * (multipart, ver "Enviar transcrição para análise" na collection) — trocar
- * isto por `chamarApi` real é o próximo passo natural quando essa tela
- * entrar em escopo.
+ * POST /api/v1/transcricoes/upload. O navegador define o boundary multipart.
+ * O 202 confirma a criação; o processamento é acompanhado pela fila.
  */
+export async function validarArquivoTranscricao(arquivo: File): Promise<void> {
+  if (!arquivo.name.toLowerCase().endsWith(".txt")) throw new Error("Selecione um arquivo .txt.");
+  if (arquivo.size === 0 || arquivo.size > 1_048_576) throw new Error("O arquivo deve ser não vazio e ter até 1 MiB.");
+  const bytes = await arquivo.arrayBuffer();
+  let conteudo: string;
+  try { conteudo = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+  catch { throw new Error("O arquivo deve estar codificado em UTF-8."); }
+  if (!conteudo.trim()) throw new Error("A transcrição não pode conter apenas espaços.");
+}
+
 export async function enviarTranscricao(
   payload: EnvioTranscricao
-): Promise<{ reuniaoId: number; status: "PENDENTE" }> {
-  void payload;
-  return { reuniaoId: Date.now(), status: "PENDENTE" };
+): Promise<UploadTranscricaoResponse> {
+  await validarArquivoTranscricao(payload.arquivo);
+  const body = new FormData();
+  body.append("arquivo", payload.arquivo);
+  body.append("clienteId", String(payload.clienteId));
+  body.append("usuarioId", String(payload.usuarioId));
+  body.append("dataReuniao", payload.dataReuniao);
+  body.append("duracaoMinutos", String(payload.duracaoMinutos));
+  return chamarApi<UploadTranscricaoResponse>("/api/v1/transcricoes/upload", { method: "POST", body });
 }

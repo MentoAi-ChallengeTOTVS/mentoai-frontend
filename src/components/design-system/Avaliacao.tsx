@@ -59,6 +59,7 @@ export function ModalAvaliarServico({
   onClose,
   enviando = false,
   erro = null,
+  indisponivel,
   className,
 }: {
   aberto: boolean;
@@ -77,6 +78,7 @@ export function ModalAvaliarServico({
   enviando?: boolean;
   /** Mensagem de erro do envio, exibida acima das ações. */
   erro?: string | null;
+  indisponivel?: string;
   className?: string;
 }) {
   if (!aberto) return null;
@@ -121,6 +123,7 @@ export function ModalAvaliarServico({
         />
 
         <div className="flex w-full flex-col items-center gap-4">
+          {indisponivel && <p role="status" className="w-full text-corpo text-neutro-muted">{indisponivel}</p>}
           {erro && (
             <p className="w-full text-caption leading-caption text-sinal-risco-churn">{erro}</p>
           )}
@@ -129,7 +132,7 @@ export function ModalAvaliarServico({
           <ButtonPrimary
             className="w-full justify-center py-3.5"
             onClick={onEnviar}
-            disabled={enviando || nota < 1}
+            disabled={enviando || nota < 1 || !!indisponivel || !onEnviar}
           >
             {enviando ? "Enviando..." : "Enviar avaliação"}
           </ButtonPrimary>
