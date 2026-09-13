@@ -1,4 +1,16 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+/**
+ * No servidor (Server Components / SSR, dentro do container do frontend),
+ * "localhost" aponta pro próprio container do frontend, não pro backend —
+ * por isso usamos API_INTERNAL_URL (env var só de runtime, sem prefixo
+ * NEXT_PUBLIC_, então não é "gravada" no bundle) apontando pro serviço
+ * `backend` do docker-compose. No navegador, continua usando
+ * NEXT_PUBLIC_API_URL (localhost:8080, que é a porta publicada no host).
+ */
+const API_URL = (
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL
+    : process.env.NEXT_PUBLIC_API_URL
+)?.replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(
