@@ -105,7 +105,9 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
         <TabelaClientesCabecalho />
         {clientesDaPagina.length === 0 ? (
           <p className="w-full px-6 py-10 text-center text-corpo text-neutro-muted">
-            Nenhum cliente encontrado para &quot;{busca}&quot;.
+            {busca.trim()
+              ? `Nenhum cliente encontrado para ‘${busca.trim()}’.`
+              : "Nenhum cliente disponível."}
           </p>
         ) : (
           clientesDaPagina.map((cliente, i) => (
