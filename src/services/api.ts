@@ -24,17 +24,22 @@ export class ApiError extends Error {
 }
 
 /**
- * Faz uma chamada à API configurada por NEXT_PUBLIC_API_URL.
+ * Usa API_INTERNAL_URL no servidor e NEXT_PUBLIC_API_URL no navegador.
+ * As URLs base não devem incluir /api/v1; esse prefixo pertence ao caminho.
  *
  * Exemplo:
- * `chamarApi<Cliente>("/clientes/1")`
+ * `chamarApi<Cliente>("/api/v1/clientes/1")`
  */
 export async function chamarApi<T>(
   caminho: string,
   opcoes: RequestInit = {}
 ): Promise<T> {
   if (!API_URL) {
-    throw new Error("A variável NEXT_PUBLIC_API_URL não foi configurada.");
+    throw new Error(
+      typeof window === "undefined"
+        ? "Configure API_INTERNAL_URL (ou NEXT_PUBLIC_API_URL para execução local) para chamar a API no servidor."
+        : "Configure NEXT_PUBLIC_API_URL antes do build para chamar a API no navegador."
+    );
   }
 
   const headers = new Headers(opcoes.headers);
