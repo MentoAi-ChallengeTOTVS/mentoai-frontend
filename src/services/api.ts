@@ -54,3 +54,24 @@ export async function chamarApi<T>(
 
   return body as T;
 }
+
+/**
+ * Como `chamarApi`, mas devolve `null` em 404 em vez de lançar — útil pros
+ * "buscar X por id" onde "não encontrado" é um resultado válido (quem chama
+ * decide se isso vira `notFound()`, mensagem de erro, etc.), não uma
+ * exceção a tratar em todo lugar que busca por id.
+ *
+ * Exemplo:
+ * `chamarApiOuNull<Cliente>("/api/v1/clientes/999")` -> `null`, sem lançar.
+ */
+export async function chamarApiOuNull<T>(
+  caminho: string,
+  opcoes: RequestInit = {}
+): Promise<T | null> {
+  try {
+    return await chamarApi<T>(caminho, opcoes);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
+}

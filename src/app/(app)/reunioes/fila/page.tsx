@@ -3,24 +3,20 @@ import { FilaProcessamentoClient } from "./FilaProcessamentoClient";
 
 /**
  * Fila de Processamento das Análises — issue #80 (F04, Pipeline de Análise
- * IA — confirmado atribuído ao Breno). Sem frame correspondente no Figma
- * (conferido em `page1_metadata.xml` — só existem os frames já usados nas
- * outras telas de Reunião), então montada do zero seguindo o Manual de
- * Identidade Visual e os padrões já usados nas demais telas, mesmo espírito
- * do gap já documentado em "Meu Perfil".
+ * IA — atribuído ao Breno). Sem frame correspondente no Figma, montada
+ * seguindo o Manual de Identidade Visual e os padrões já usados nas demais
+ * telas, mesmo espírito do gap já documentado em "Meu Perfil".
  *
- * Escopo da issue: "fila de processamento, indicadores visuais de status,
- * atualizações periódicas simples e navegação para análises concluídas."
- * Critério de aceite: "Usuário identifica o estado de cada análise."
+ * A partir de 13/09/2026 (tarefa "conectar Fila de Processamento ->
+ * Analysis/getFila"): a simulação local de progresso (`setInterval`
+ * incrementando um percentual fake) saiu — a tela agora faz polling real a
+ * cada 2s contra `GET /api/v1/analises/fila` e renderiza exatamente o que o
+ * backend devolve (sem barra de progresso/percentual, removida a pedido).
  *
- * Server Component (busca o seed inicial via `reunioesService.
- * listarFilaProcessamento()`) + Client Component (`FilaProcessamentoClient`,
- * `setInterval` simulando as "atualizações periódicas") — mesmo padrão
- * adotado em todas as telas em 24/08/2026 pra preparar o frontend pro
- * backend. A simulação de progresso em si continua no client: no mundo
- * real ela seria substituída por polling contra o mesmo endpoint ou uma
- * conexão de push (WebSocket/SSE), não por uma resposta única — ver nota
- * completa em `reunioesService.listarFilaProcessamento`.
+ * Server Component (busca o estado inicial via `reunioesService.
+ * listarFilaProcessamento()`, evita a tela nascer vazia até o primeiro
+ * poll) + Client Component (`FilaProcessamentoClient`, dono do
+ * `setInterval` de polling).
  */
 export default async function FilaProcessamentoPage() {
   const seed = await listarFilaProcessamento();
