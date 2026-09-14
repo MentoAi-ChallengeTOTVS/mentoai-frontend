@@ -11,7 +11,6 @@ export interface ItemTimelineData {
 export interface PerfilClienteData {
   cliente: ClienteResponse;
   timeline: ItemTimelineData[];
-  resumoPrincipal: { texto: string; reuniaoId: number; dataReuniao: string } | null;
   analisesIncompletas: boolean;
 }
 
@@ -31,17 +30,9 @@ export async function buscarPerfilCliente(clienteId: number): Promise<PerfilClie
       falhaConsulta: resultado.status === "rejected",
     };
   });
-  const principal = timeline.find((item) =>
-    item.analise?.statusProcessamento === "PROCESSADA" && item.analise.resumoExecutivo?.trim()
-  );
   return {
     cliente,
     timeline,
-    resumoPrincipal: principal?.analise ? {
-      texto: principal.analise.resumoExecutivo,
-      reuniaoId: principal.reuniao.id,
-      dataReuniao: principal.reuniao.dataReuniao,
-    } : null,
     analisesIncompletas: timeline.some((item) => item.falhaConsulta),
   };
 }

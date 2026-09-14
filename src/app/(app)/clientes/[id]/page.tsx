@@ -12,7 +12,8 @@ export default async function PerfilClientePage({ params }: { params: Promise<{ 
   if (!Number.isSafeInteger(clienteId) || clienteId <= 0) notFound();
   const perfil = await buscarPerfilCliente(clienteId);
   if (!perfil) notFound();
-  const { cliente, timeline, resumoPrincipal, analisesIncompletas } = perfil;
+  const { cliente, timeline, analisesIncompletas } = perfil;
+  const resumoContextual = cliente.resumoContextual?.trim() || null;
 
   return (
     <>
@@ -31,7 +32,7 @@ export default async function PerfilClientePage({ params }: { params: Promise<{ 
           </div>
         </div>
       </div>
-      {analisesIncompletas && <p role="status" className="text-corpo text-sinal-alerta">Não foi possível carregar algumas análises. O histórico e o resumo podem estar incompletos.</p>}
+      {analisesIncompletas && <p role="status" className="text-corpo text-sinal-alerta">Não foi possível carregar algumas análises. O histórico pode estar incompleto.</p>}
       <div className="flex w-full flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:flex-row lg:overflow-hidden">
         <div className="flex w-full min-w-0 flex-1 flex-col items-start gap-5 lg:h-full lg:min-h-0 lg:overflow-hidden">
           <h2 className="text-subtitulo font-medium text-neutro-dark">Linha do Tempo de Reuniões</h2>
@@ -55,12 +56,9 @@ export default async function PerfilClientePage({ params }: { params: Promise<{ 
           <div className="flex w-full flex-col items-start gap-4 rounded-lg border border-neutro-border bg-white p-6">
             <div className="flex w-full items-center gap-2">
               <h2 className="text-subtitulo font-medium text-neutro-dark">Resumo Estratégico</h2>
-              {resumoPrincipal && <BadgeGeradoPorIA />}
+              {resumoContextual && <BadgeGeradoPorIA />}
             </div>
-            <p className="w-full whitespace-pre-wrap break-words text-corpo text-neutro-dark">{resumoPrincipal?.texto ?? "Ainda não há resumo de análise processada disponível para este cliente."}</p>
-            {resumoPrincipal && <Link href={`/reunioes/${resumoPrincipal.reuniaoId}`} className="text-caption text-menta">
-              Resumo da reunião de {new Date(resumoPrincipal.dataReuniao).toLocaleDateString("pt-BR")}
-            </Link>}
+            <p className="w-full whitespace-pre-wrap break-words text-corpo text-neutro-dark">{resumoContextual ?? "Ainda não há resumo contextual disponível para este cliente."}</p>
           </div>
           <Link href="/copiloto" className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-menta px-4 text-corpo font-medium text-white">
             <Sparkles className="size-4" />Iniciar conversa no Copiloto

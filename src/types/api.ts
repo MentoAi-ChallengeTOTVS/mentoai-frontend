@@ -30,6 +30,7 @@ export interface ClienteResponse {
   porte: string;
   criacao: string;
   status: boolean;
+  resumoContextual: string | null;
 }
 
 export interface UsuarioResponse {
