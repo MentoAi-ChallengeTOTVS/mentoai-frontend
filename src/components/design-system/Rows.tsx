@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Calendar, Building2, ChevronRight, Pencil } from "lucide-react";
 import { BadgeStatus, BadgePrioridade, BadgeStatusAcesso } from "./Badges";
 import type {
@@ -217,12 +218,14 @@ export function RowAlerta({
   motivo,
   prioridade,
   lido,
+  acoes,
   className,
 }: {
   rotulo: string;
   motivo: string;
   prioridade: PrioridadeAlerta;
   lido: boolean;
+  acoes?: ReactNode;
   className?: string;
 }) {
   return (
@@ -265,6 +268,7 @@ export function RowAlerta({
             {lido ? "Lido" : "Não lido"}
           </p>
         </div>
+        {acoes && <div className="flex shrink-0 items-center gap-2">{acoes}</div>}
       </div>
     </div>
   );

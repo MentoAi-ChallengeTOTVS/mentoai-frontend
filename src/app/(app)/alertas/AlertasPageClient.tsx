@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
 import { RowAlerta } from "@/components/design-system/Rows";
 import { marcarComoLido, type AlertaListItem } from "@/services/alertas.service";
@@ -91,16 +92,14 @@ function GrupoChips<T extends string>({
 
 /**
  * Client Component da Central de Alertas — filtros por chip, paginação e
- * marcação de lido.
+ * marcação de lido e acesso à análise de origem.
  *
  * Desde 13/09/2026 os alertas vêm da API real (`GET /api/v1/alertas`), mas
  * o item não é mais `AlertaUsuario` (domain.ts) — é `AlertaListItem`
  * (`alertas.service.ts`), mais plano. Dois efeitos disso na tela:
  *
  * 1. A coluna que antes mostrava o nome do cliente agora mostra a data de
- *    criação do alerta — o backend não expõe hoje um jeito de resolver
- *    `Alerta -> SinalComercial -> AnaliseIA -> Reuniao -> Cliente` (GAP
- *    documentado em `alertas.service.ts`).
+ *    criação do alerta.
  * 2. "Lido" continua sendo estado local otimista (sem persistência real —
  *    mesma limitação de antes), mas agora a chamada que dispara ao marcar
  *    é um `PATCH` de verdade contra o backend, não mais um no-op.
@@ -193,6 +192,7 @@ export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: Alerta
           <p className="flex-1">MOTIVO DO ALERTA (ANÁLISE COMERCIAL IA)</p>
           <p className="w-30 shrink-0 text-center">PRIORIDADE</p>
           <p className="w-30 shrink-0 text-right">STATUS</p>
+          <p className="w-40 shrink-0 text-right">AÇÕES</p>
         </div>
 
         {itensDaPagina.length === 0 ? (
@@ -201,33 +201,36 @@ export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: Alerta
           </p>
         ) : (
           itensDaPagina.map((item) => {
-            const linha = (
+            return (
               <RowAlerta
+                key={item.id}
                 rotulo={formatDataHora(item.criacao)}
                 motivo={item.motivo}
                 prioridade={item.prioridade}
                 lido={item.lido}
+                acoes={
+                  <>
+                    {item.reuniaoId !== null && (
+                      <Link
+                        href={`/reunioes/${item.reuniaoId}`}
+                        className="whitespace-nowrap text-legenda font-medium text-menta hover:underline"
+                      >
+                        Ver análise
+                      </Link>
+                    )}
+                    {!item.lido && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarcarLido(item.id)}
+                        aria-label={`Marcar alerta "${item.motivo}" como lido`}
+                        className="whitespace-nowrap text-legenda text-neutro-muted hover:text-neutro-dark hover:underline"
+                      >
+                        Marcar como lido
+                      </button>
+                    )}
+                  </>
+                }
               />
-            );
-
-            // O frame não mostra botão dedicado de "marcar como lido" — a
-            // própria linha é o alvo do clique. Já lida, deixa de ser botão
-            // (não há o que fazer com ela, e um botão inerte só atrapalharia
-            // quem navega por teclado).
-            return item.lido ? (
-              <div key={item.id} className="w-full">
-                {linha}
-              </div>
-            ) : (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleMarcarLido(item.id)}
-                aria-label={`Marcar alerta "${item.motivo}" como lido`}
-                className="w-full cursor-pointer text-left transition-colors hover:bg-neutro-background/60"
-              >
-                {linha}
-              </button>
             );
           })
         )}

@@ -15,6 +15,8 @@ import { chamarApi } from "./api";
 export interface AlertaListItem {
   /** Id do `Alerta` (não de `AlertaUsuario`) — é o que `GET /api/v1/alertas` devolve. */
   id: number;
+  analiseId: number | null;
+  reuniaoId: number | null;
   motivo: string;
   prioridade: PrioridadeAlerta;
   criacao: string;
@@ -30,21 +32,22 @@ export interface AlertaListItem {
 }
 
 function toAlertaListItem(dto: AlertaResponse): AlertaListItem {
-  return { id: dto.id, motivo: dto.motivo, prioridade: dto.prioridade, criacao: dto.criacao, lido: false };
+  return {
+    id: dto.id,
+    analiseId: dto.analiseId,
+    reuniaoId: dto.reuniaoId,
+    motivo: dto.motivo,
+    prioridade: dto.prioridade,
+    criacao: dto.criacao,
+    lido: false,
+  };
 }
 
 /**
  * Lista os alertas mais recentes.
  *
- * GAP conhecido: `AlertaResponse` só traz `sinalComercialId` — reconstruir o
- * nome do cliente exigiria `SinalComercial -> analiseId -> AnaliseIA ->
- * reuniaoId -> Reuniao -> clienteId -> Cliente`, mas não existe endpoint
- * público pra buscar um `SinalComercial` por id (só `SinalComercialService`
- * interno, sem controller) — o encadeamento trava no primeiro passo. Por
- * isso a Central de Alertas não mostra mais o nome do cliente por linha (só
- * motivo/prioridade/data); um jeito simples de destravar isso no backend
- * seria o próprio `AlertaResponse` já vir com `clienteId`/`clienteNome`
- * resolvidos, mesmo padrão que `AnaliseFilaItemResponse` já usa pra fila.
+ * A resposta inclui os IDs da análise e reunião vinculadas ao sinal para que
+ * a Central de Alertas possa levar diretamente ao detalhe da análise.
  * Endpoint: `GET /api/v1/alertas?page=0&size=50&sort=criacao,desc`
  */
 export async function listarAlertas(): Promise<AlertaListItem[]> {

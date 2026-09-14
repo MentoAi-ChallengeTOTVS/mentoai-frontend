@@ -149,6 +149,8 @@ export interface AnaliseFilaResponse {
 export interface AlertaResponse {
   id: number;
   sinalComercialId: number | null;
+  analiseId: number | null;
+  reuniaoId: number | null;
   prioridade: PrioridadeAlerta;
   motivo: string;
   criacao: string;
