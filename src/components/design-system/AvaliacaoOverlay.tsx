@@ -7,6 +7,7 @@ import { enviarFeedback } from "@/services/avaliacao.service";
 export function AvaliacaoOverlay({ onClose }: { onClose: () => void }) {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
+  const [emailCopy, setEmailCopy] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
@@ -15,6 +16,7 @@ export function AvaliacaoOverlay({ onClose }: { onClose: () => void }) {
     if (enviando) return;
     setNota(0);
     setComentario("");
+    setEmailCopy("");
     setErro(null);
     setSucesso(false);
     onClose();
@@ -24,7 +26,7 @@ export function AvaliacaoOverlay({ onClose }: { onClose: () => void }) {
     setErro(null);
     setEnviando(true);
     try {
-      await enviarFeedback({ nota, comentario });
+      await enviarFeedback({ nota, comentario, emailCopy });
       setSucesso(true);
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Não foi possível enviar sua avaliação.");
@@ -41,6 +43,7 @@ export function AvaliacaoOverlay({ onClose }: { onClose: () => void }) {
 
   return <ModalAvaliarServico aberto nota={nota} onNotaChange={setNota}
     comentario={comentario} onComentarioChange={setComentario}
+    emailCopy={emailCopy} onEmailCopyChange={setEmailCopy}
     onEnviar={() => void enviar()} onDispensar={fechar} onClose={fechar}
     enviando={enviando} erro={erro} sucesso={sucesso} />;
 }

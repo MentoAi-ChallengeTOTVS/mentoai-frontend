@@ -54,6 +54,8 @@ export function ModalAvaliarServico({
   onNotaChange,
   comentario,
   onComentarioChange,
+  emailCopy,
+  onEmailCopyChange,
   onEnviar,
   onDispensar,
   onClose,
@@ -67,6 +69,8 @@ export function ModalAvaliarServico({
   onNotaChange: (v: number) => void;
   comentario: string;
   onComentarioChange: (v: string) => void;
+  emailCopy?: string;
+  onEmailCopyChange?: (v: string) => void;
   onEnviar?: () => void;
   onDispensar?: () => void;
   onClose?: () => void;
@@ -138,6 +142,20 @@ export function ModalAvaliarServico({
               placeholder="Conte um pouco mais (opcional)"
               className="h-[100px] w-full resize-none rounded-lg border border-neutro-border p-3 text-corpo text-neutro-dark placeholder:text-neutro-muted focus:outline-none focus:ring-2 focus:ring-menta-clara disabled:opacity-50"
             />
+
+            {onEmailCopyChange && (
+              <label className="flex w-full flex-col items-start gap-1.5">
+                <span className="text-[12px] leading-4 font-medium text-neutro-muted">Seu e-mail (opcional)</span>
+                <input
+                  type="email"
+                  value={emailCopy ?? ""}
+                  onChange={(e) => onEmailCopyChange(e.target.value)}
+                  disabled={enviando}
+                  placeholder="seu@email.com"
+                  className="h-11 w-full rounded-lg border border-neutro-border px-3 text-corpo text-neutro-dark placeholder:text-neutro-muted focus:outline-none focus:ring-2 focus:ring-menta-clara disabled:opacity-50"
+                />
+              </label>
+            )}
 
             <div className="flex w-full flex-col items-center gap-4">
               {erro && (

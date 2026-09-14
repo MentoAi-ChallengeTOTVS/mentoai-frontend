@@ -254,11 +254,19 @@ test("feedback normaliza o comentário e usa o token da sessão", async (t) => {
     assert.equal(url, "http://backend:8080/api/v1/feedbacks");
     assert.equal(options.method, "POST");
     assert.equal(options.headers.get("Authorization"), "Bearer feedback-token");
-    assert.deepEqual(JSON.parse(options.body), { nota: 5, comentario: "Ótimo produto" });
+    assert.deepEqual(JSON.parse(options.body), {
+      nota: 5,
+      comentario: "Ótimo produto",
+      emailCopy: "copia@mentoai.com.br",
+    });
     return new Response(null, { status: 200 });
   });
   try {
-    await avaliacao.enviarFeedback({ nota: 5, comentario: "  Ótimo produto  " });
+    await avaliacao.enviarFeedback({
+      nota: 5,
+      comentario: "  Ótimo produto  ",
+      emailCopy: "  copia@mentoai.com.br ",
+    });
     await assert.rejects(avaliacao.enviarFeedback({ nota: 0 }), /1 a 5/);
     await assert.rejects(avaliacao.enviarFeedback({ nota: 5, comentario: "a".repeat(1001) }), /1000/);
   } finally {
