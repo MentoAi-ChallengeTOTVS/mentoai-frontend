@@ -21,23 +21,22 @@ const INTERVALO_MS = 2000;
 /**
  * Client Component da Fila de Processamento.
  *
- * Desde 13/09/2026 não simula mais nada localmente: recebe o estado inicial
- * do Server Component (`page.tsx`, via `reunioesService.
- * listarFilaProcessamento()`) e faz `setInterval` de 2 em 2 segundos
+ * Desde 13/09/2026 não simula mais nada localmente: faz a carga inicial e
+ * um `setInterval` de 2 em 2 segundos
  * chamando o mesmo endpoint real (`GET /api/v1/analises/fila`) — a
  * progressão PENDENTE -> PROCESSANDO -> PROCESSADA/ERRO acontece no
  * backend; aqui só se busca e renderiza o estado mais recente. Sem barra de
  * progresso/percentual (removida a pedido — o backend não expõe um
  * percentual de progresso, só o status discreto).
  */
-export function FilaProcessamentoClient({ seed }: { seed: AnaliseFilaResponse }) {
-  const [estado, setEstado] = useState<AnaliseFilaResponse>(seed);
+export function FilaProcessamentoClient() {
+  const [estado, setEstado] = useState<AnaliseFilaResponse | null>(null);
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
 
-    const intervalId = setInterval(async () => {
+    const atualizar = async () => {
       try {
         const atual = await listarFilaProcessamento();
         if (!cancelado) {
@@ -49,13 +48,22 @@ export function FilaProcessamentoClient({ seed }: { seed: AnaliseFilaResponse })
         // conhecido na tela em vez de limpar tudo, só sinaliza o problema.
         if (!cancelado) setOffline(true);
       }
-    }, INTERVALO_MS);
+    };
+
+    void atualizar();
+    const intervalId = setInterval(atualizar, INTERVALO_MS);
 
     return () => {
       cancelado = true;
       clearInterval(intervalId);
     };
   }, []);
+
+  if (!estado) {
+    return offline
+      ? <p role="alert" className="text-corpo text-sinal-risco-churn">Não foi possível carregar a fila de processamento.</p>
+      : <p role="status" className="text-corpo text-neutro-muted">Carregando fila de processamento...</p>;
+  }
 
   const { fila, finalizados } = estado;
 

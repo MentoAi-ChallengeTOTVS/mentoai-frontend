@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import Link from "next/link";
 import { ArrowDown, ArrowUp, CloudUpload, Eye, EyeOff } from "lucide-react";
 import {
   BadgeGeradoPorIA,
@@ -116,12 +115,10 @@ export function CardUploadTranscricao({
 
 export function CardLoginForm({
   onSubmit,
-  forgotPasswordHref = "/esqueci-senha",
   loading = false,
   className,
 }: {
   onSubmit?: (data: { email: string; senha: string }) => void;
-  forgotPasswordHref?: string;
   loading?: boolean;
   className?: string;
 }) {
@@ -187,16 +184,10 @@ export function CardLoginForm({
           </label>
         </div>
 
-        <div className="flex w-full flex-col items-center gap-4">
+        <div className="flex w-full flex-col items-center">
           <ButtonPrimary type="submit" disabled={loading} className="w-full justify-center">
             {loading ? "Entrando..." : "Entrar"}
           </ButtonPrimary>
-          <Link
-            href={forgotPasswordHref}
-            className="text-[13px] leading-[18px] font-medium text-menta"
-          >
-            Esqueci minha senha
-          </Link>
         </div>
       </form>
     </div>

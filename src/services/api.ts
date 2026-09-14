@@ -1,3 +1,5 @@
+import { lerSessao, removerSessao } from "@/lib/session";
+
 /**
  * No servidor (Server Components / SSR, dentro do container do frontend),
  * "localhost" aponta pro próprio container do frontend, não pro backend —
@@ -32,7 +34,8 @@ export class ApiError extends Error {
  */
 export async function chamarApi<T>(
   caminho: string,
-  opcoes: RequestInit = {}
+  opcoes: RequestInit = {},
+  autenticada = true
 ): Promise<T> {
   if (!API_URL) {
     throw new Error(
@@ -44,6 +47,11 @@ export async function chamarApi<T>(
 
   const headers = new Headers(opcoes.headers);
 
+  if (autenticada && !headers.has("Authorization")) {
+    const sessao = lerSessao();
+    if (sessao) headers.set("Authorization", `${sessao.tipo} ${sessao.token}`);
+  }
+
   if (opcoes.body && !(opcoes.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -52,6 +60,11 @@ export async function chamarApi<T>(
     ...opcoes,
     headers,
   });
+
+  if (resposta.status === 401 && autenticada && typeof window !== "undefined") {
+    removerSessao(true);
+    window.location.replace("/login");
+  }
 
   const contentType = resposta.headers.get("content-type") ?? "";
   const body = resposta.status === 204

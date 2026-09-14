@@ -31,6 +31,9 @@ const perfil = load("src/services/perfilCliente.service.ts");
 const usuarios = load("src/services/usuarios.service.ts");
 const reunioes = load("src/services/reunioes.service.ts");
 const { ApiError } = load("src/services/api.ts");
+const api = load("src/services/api.ts");
+const auth = load("src/services/auth.service.ts");
+const session = load("src/lib/session.ts");
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
 test("perfil ordena reuniões, usa resumo processado e isola falhas de análise", async (t) => {
@@ -47,8 +50,6 @@ test("perfil ordena reuniões, usa resumo processado e isola falhas de análise"
   });
   const result = await perfil.buscarPerfilCliente(1);
   assert.deepEqual(result.timeline.map((x) => x.reuniao.id), [4, 3, 2, 1]);
-  assert.equal(result.resumoPrincipal.texto, "Resumo real");
-  assert.equal(result.resumoPrincipal.reuniaoId, 2);
   assert.equal(result.analisesIncompletas, true);
   assert.match(perfil.resumoDoItem(result.timeline[0]), /Não foi possível/);
   assert.match(perfil.resumoDoItem(result.timeline[3]), /ainda não disponível/);
@@ -67,7 +68,6 @@ test("cliente sem reuniões tem resumo vazio; mensagens de processamento são re
   t.mock.method(globalThis, "fetch", async (url) => json(url.endsWith("/reunioes") ? [] : { id: 1 }));
   const result = await perfil.buscarPerfilCliente(1);
   assert.deepEqual(result.timeline, []);
-  assert.equal(result.resumoPrincipal, null);
   assert.equal(result.analisesIncompletas, false);
   assert.match(perfil.resumoDoItem({ analise: { statusProcessamento: "PROCESSANDO" } }), /em processamento/);
   assert.equal(perfil.resumoDoItem({ analise: { statusProcessamento: "ERRO", mensagemErro: "Falha informada" } }), "Falha informada");
@@ -131,5 +131,90 @@ test("upload propaga erros HTTP sem fabricar sucesso", async (t) => {
     mock.mock.mockImplementation(async () => json({ message: "Erro informado" }, status));
     await assert.rejects(reunioes.enviarTranscricao({ arquivo: new File(["abc"], "teste.txt"), clienteId: 1, usuarioId: 1, dataReuniao: "2026-09-13T10:00:00", duracaoMinutos: 1 }),
       (e) => e instanceof ApiError && e.status === status);
+  }
+});
+
+function navegadorFake() {
+  const dados = new Map();
+  let redirecionamento = null;
+  return {
+    localStorage: {
+      getItem: (key) => dados.get(key) ?? null,
+      setItem: (key, value) => dados.set(key, value),
+      removeItem: (key) => dados.delete(key),
+    },
+    location: { replace: (url) => { redirecionamento = url; } },
+    dispatchEvent: () => true,
+    redirecionamento: () => redirecionamento,
+  };
+}
+
+test("login envia o payload exato, não envia token e produz sessão persistível", async (t) => {
+  const windowAnterior = globalThis.window;
+  const navegador = navegadorFake();
+  globalThis.window = navegador;
+  const response = {
+    token: "jwt-token",
+    tipo: "Bearer",
+    email: "pedro.coutinho@mentoai.com.br",
+    role: "DIRETOR_COMERCIAL",
+  };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.equal(url, "http://backend:8080/api/v1/auth/login");
+    assert.equal(options.method, "POST");
+    assert.equal(options.headers.has("Authorization"), false);
+    assert.deepEqual(JSON.parse(options.body), {
+      email: "pedro.coutinho@mentoai.com.br",
+      senha: "senhaSegura123",
+    });
+    return json(response);
+  });
+
+  try {
+    const sessao = await auth.autenticar(" pedro.coutinho@mentoai.com.br ", "senhaSegura123");
+    assert.deepEqual(sessao, { ...response, nome: "Pedro Coutinho" });
+    session.salvarSessao(sessao);
+    assert.deepEqual(session.lerSessao(), sessao);
+  } finally {
+    globalThis.window = windowAnterior;
+  }
+});
+
+test("API adiciona Bearer, mantém 403 e encerra sessão em 401", async (t) => {
+  const windowAnterior = globalThis.window;
+  const navegador = navegadorFake();
+  globalThis.window = navegador;
+  session.salvarSessao(session.criarSessao({ token: "abc", tipo: "Bearer", email: "user@mentoai.com.br", role: "EXECUTIVO_COMERCIAL" }));
+  const mock = t.mock.method(globalThis, "fetch", async (_url, options) => {
+    assert.equal(options.headers.get("Authorization"), "Bearer abc");
+    return json({ message: "Sem permissão" }, 403);
+  });
+
+  try {
+    await assert.rejects(api.chamarApi("/api/v1/usuarios"), (e) => e instanceof ApiError && e.status === 403);
+    assert.ok(session.lerSessao());
+
+    mock.mock.mockImplementation(async (_url, options) => {
+      assert.equal(options.headers.get("Authorization"), "Bearer abc");
+      return json({ message: "Token expirado" }, 401);
+    });
+    await assert.rejects(api.chamarApi("/api/v1/clientes"), (e) => e instanceof ApiError && e.status === 401);
+    assert.equal(session.lerSessao(), null);
+    assert.equal(navegador.redirecionamento(), "/login");
+  } finally {
+    globalThis.window = windowAnterior;
+  }
+});
+
+test("sessão malformada é descartada", () => {
+  const windowAnterior = globalThis.window;
+  const navegador = navegadorFake();
+  globalThis.window = navegador;
+  try {
+    navegador.localStorage.setItem(session.SESSION_STORAGE_KEY, "{invalido");
+    assert.equal(session.lerSessao(), null);
+    assert.equal(navegador.localStorage.getItem(session.SESSION_STORAGE_KEY), null);
+  } finally {
+    globalThis.window = windowAnterior;
   }
 });

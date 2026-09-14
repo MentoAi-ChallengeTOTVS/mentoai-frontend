@@ -58,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-dvh w-full items-stretch overflow-hidden bg-neutro-background">
       <Sidebar
         activeHref={pathname}
-        perfil={usuario.perfil}
+        perfil={usuario.role}
         userName={usuario.nome}
         onLogout={handleLogout}
         onOpenSearch={() => {

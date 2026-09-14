@@ -18,7 +18,7 @@ function mensagemErro(error: unknown) {
 
 export function UsuariosPageClient() {
   const { usuario: usuarioLogado, carregando: carregandoSessao } = useAuth();
-  const autorizado = !carregandoSessao && usuarioLogado?.perfil === "DIRETOR_COMERCIAL";
+  const autorizado = !carregandoSessao && usuarioLogado?.role === "DIRETOR_COMERCIAL";
   const [dados, setDados] = useState<SpringPage<UsuarioResponse> | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erroLista, setErroLista] = useState<string | null>(null);

@@ -1,4 +1,7 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { BadgePorte } from "@/components/design-system/TableClientes";
@@ -6,12 +9,25 @@ import { BadgeGeradoPorIA } from "@/components/design-system/Badges";
 import { ItemTimelineReuniao } from "@/components/design-system/Timeline";
 import { buscarPerfilCliente, resumoDoItem } from "@/services/perfilCliente.service";
 
-export default async function PerfilClientePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const clienteId = Number(id);
-  if (!Number.isSafeInteger(clienteId) || clienteId <= 0) notFound();
-  const perfil = await buscarPerfilCliente(clienteId);
-  if (!perfil) notFound();
+type PerfilCarregado = Exclude<Awaited<ReturnType<typeof buscarPerfilCliente>>, null>;
+
+export default function PerfilClientePage() {
+  const params = useParams<{ id: string }>();
+  const clienteId = Number(params.id);
+  const idValido = Number.isSafeInteger(clienteId) && clienteId > 0;
+  const [perfil, setPerfil] = useState<PerfilCarregado | null | undefined>(undefined);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!idValido) return;
+    buscarPerfilCliente(clienteId)
+      .then(setPerfil)
+      .catch((e) => setErro(e instanceof Error ? e.message : "Não foi possível carregar o cliente."));
+  }, [clienteId, idValido]);
+
+  if (erro) return <p role="alert" className="text-corpo text-sinal-risco-churn">{erro}</p>;
+  if (!idValido || perfil === null) return <p role="alert" className="text-corpo text-neutro-muted">Cliente não encontrado.</p>;
+  if (perfil === undefined) return <p role="status" className="text-corpo text-neutro-muted">Carregando cliente...</p>;
   const { cliente, timeline, analisesIncompletas } = perfil;
   const resumoContextual = cliente.resumoContextual?.trim() || null;
 
@@ -33,7 +49,7 @@ export default async function PerfilClientePage({ params }: { params: Promise<{ 
         </div>
       </div>
       {analisesIncompletas && <p role="status" className="text-corpo text-sinal-alerta">Não foi possível carregar algumas análises. O histórico pode estar incompleto.</p>}
-      <div className="flex w-full flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:flex-row lg:overflow-hidden">
+      <div className="flex w-full flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:flex-row">
         <div className="flex w-full min-w-0 flex-1 flex-col items-start gap-5 lg:h-full lg:min-h-0 lg:overflow-hidden">
           <h2 className="text-subtitulo font-medium text-neutro-dark">Linha do Tempo de Reuniões</h2>
           {timeline.length === 0 ? (

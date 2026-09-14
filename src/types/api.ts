@@ -43,6 +43,23 @@ export interface UsuarioResponse {
   atualizacao: string;
 }
 
+export interface AuthRequest {
+  email: string;
+  senha: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  tipo: string;
+  email: string;
+  role: PerfilUsuario;
+}
+
+/** Sessão persistida no navegador. `nome` é derivado do e-mail porque o login não o devolve. */
+export interface Sessao extends AuthResponse {
+  nome: string;
+}
+
 export interface SalvarUsuarioRequest {
   nome: string;
   email: string;

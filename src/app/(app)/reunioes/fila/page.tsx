@@ -1,4 +1,3 @@
-import { listarFilaProcessamento } from "@/services/reunioes.service";
 import { FilaProcessamentoClient } from "./FilaProcessamentoClient";
 
 /**
@@ -13,12 +12,9 @@ import { FilaProcessamentoClient } from "./FilaProcessamentoClient";
  * cada 2s contra `GET /api/v1/analises/fila` e renderiza exatamente o que o
  * backend devolve (sem barra de progresso/percentual, removida a pedido).
  *
- * Server Component (busca o estado inicial via `reunioesService.
- * listarFilaProcessamento()`, evita a tela nascer vazia até o primeiro
- * poll) + Client Component (`FilaProcessamentoClient`, dono do
- * `setInterval` de polling).
+ * `FilaProcessamentoClient` faz a carga inicial e o polling no navegador,
+ * permitindo que todas as chamadas incluam o JWT da sessão.
  */
-export default async function FilaProcessamentoPage() {
-  const seed = await listarFilaProcessamento();
-  return <FilaProcessamentoClient seed={seed} />;
+export default function FilaProcessamentoPage() {
+  return <FilaProcessamentoClient />;
 }

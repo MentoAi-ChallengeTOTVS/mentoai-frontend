@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { listarClientes } from "@/services/clientes.service";
 import { ClientesPageClient } from "./ClientesPageClient";
+import type { Cliente } from "@/types/domain";
 
 /**
  * Tela Clientes (Figma: frame "crm-clientes-mentoai", 105:1214) — feature
@@ -20,14 +24,18 @@ import { ClientesPageClient } from "./ClientesPageClient";
  *    ícone de edição (mesmo padrão do `Pencil` em `Row/Usuario`) pra manter
  *    a edição acessível na própria listagem.
  *
- * Server Component (busca a lista inicial via `clientesService`) + Client
- * Component (`ClientesPageClient`, busca/paginação/drawer) — mesmo padrão
- * já usado em Perfil do Cliente e Detalhe da Reunião, adotado aqui em
- * 24/08/2026 pra preparar a tela pro backend: quando a API existir, só
- * `clientesService.listarClientes()` muda (de mock pra `fetch`), a tela não
- * precisa saber disso.
+ * A carga inicial ocorre no navegador para que o cliente HTTP possa ler o
+ * token JWT da sessão antes de chamar `clientesService.listarClientes()`.
  */
-export default async function ClientesPage() {
-  const clientes = await listarClientes();
+export default function ClientesPage() {
+  const [clientes, setClientes] = useState<Cliente[] | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    listarClientes().then(setClientes).catch((e) => setErro(e instanceof Error ? e.message : "Não foi possível carregar os clientes."));
+  }, []);
+
+  if (erro) return <p role="alert" className="text-corpo text-sinal-risco-churn">{erro}</p>;
+  if (!clientes) return <p role="status" className="text-corpo text-neutro-muted">Carregando clientes...</p>;
   return <ClientesPageClient clientesIniciais={clientes} />;
 }

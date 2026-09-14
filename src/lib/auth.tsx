@@ -8,95 +8,73 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Usuario } from "@/types/domain";
+import type { Sessao } from "@/types/api";
 import { autenticar } from "@/services/auth.service";
+import {
+  lerSessao,
+  removerSessao,
+  salvarSessao,
+  SESSION_CLEARED_EVENT,
+  SESSION_STORAGE_KEY,
+} from "@/lib/session";
 
-/**
- * Autenticação — issue #60 ("Estado de sessão"). Não existe backend de
- * autenticação ainda, então o login aqui é mockado: qualquer e-mail/senha
- * não vazios autenticam (com um delay artificial simulando a chamada de
- * rede). O perfil retornado depende do e-mail digitado — contém "diretor"
- * vira DIRETOR_COMERCIAL, senão EXECUTIVO_COMERCIAL — só pra dar um jeito
- * de testar as duas variantes da Sidebar (a seção "Administração" só
- * aparece pro Diretor) sem precisar de UI extra pra trocar perfil.
- *
- * Sessão persiste em localStorage (`mentoai_sessao`) pra sobreviver a um
- * refresh de página. Trocar por sessão real (cookie/JWT vindo da API) assim
- * que o backend de autenticação existir — a interface de `useAuth()`
- * (usuario/login/logout) não deve precisar mudar pros componentes que já
- * consomem o context.
- */
-
-const STORAGE_KEY = "mentoai_sessao";
+/** Estado da sessão JWT, persistido em `localStorage` e sincronizado entre abas. */
 
 interface AuthContextValue {
-  usuario: Usuario | null;
+  usuario: Sessao | null;
   /** true até o primeiro check de sessão (localStorage) no mount terminar. */
   carregando: boolean;
   login: (email: string, senha: string) => Promise<{ ok: true } | { ok: false; erro: string }>;
   logout: () => void;
-  atualizarUsuario: (dados: Partial<Pick<Usuario, "nome" | "email">>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [usuario, setUsuario] = useState<Sessao | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setUsuario(JSON.parse(raw));
-    } catch {
-      // localStorage indisponível (ex.: modo privado) — segue deslogado
-    } finally {
+    let ativo = true;
+    queueMicrotask(() => {
+      if (!ativo) return;
+      setUsuario(lerSessao());
       setCarregando(false);
-    }
+    });
+
+    const sincronizar = (event: Event) => {
+      if (event instanceof StorageEvent && event.key !== SESSION_STORAGE_KEY) return;
+      setUsuario(lerSessao());
+    };
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(SESSION_CLEARED_EVENT, sincronizar);
+    return () => {
+      ativo = false;
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(SESSION_CLEARED_EVENT, sincronizar);
+    };
   }, []);
 
   const login = useCallback(async (email: string, senha: string) => {
-    let novoUsuario: Usuario;
     try {
-      novoUsuario = await autenticar(email, senha);
+      const sessao = await autenticar(email, senha);
+      salvarSessao(sessao);
+      setUsuario(sessao);
     } catch (err) {
       const erro = err instanceof Error ? err.message : "Não foi possível autenticar.";
       return { ok: false as const, erro };
     }
 
-    setUsuario(novoUsuario);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(novoUsuario));
-    } catch {
-      // segue autenticado só nesta aba, sem persistir entre refreshes
-    }
     return { ok: true as const };
   }, []);
 
   const logout = useCallback(() => {
     setUsuario(null);
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // nada a fazer — não havia nada persistido mesmo
-    }
-  }, []);
-
-  const atualizarUsuario = useCallback((dados: Partial<Pick<Usuario, "nome" | "email">>) => {
-    setUsuario((prev) => {
-      if (!prev) return prev;
-      const atualizado: Usuario = { ...prev, ...dados, atualizacao: new Date().toISOString() };
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(atualizado));
-      } catch {
-        // segue com o estado em memória mesmo sem persistir
-      }
-      return atualizado;
-    });
+    removerSessao();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ usuario, carregando, login, logout, atualizarUsuario }}>
+    <AuthContext.Provider value={{ usuario, carregando, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

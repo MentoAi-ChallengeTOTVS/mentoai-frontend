@@ -15,8 +15,7 @@ import type { Cliente } from "@/types/domain";
 /**
  * Client Component da tela Clientes — busca/paginação/drawer de
  * cadastro-edição, mesmo comportamento de antes. Recebe a lista inicial já
- * carregada pelo Server Component (`page.tsx`), que chama
- * `clientesService.listarClientes()`; daqui pra frente o state é local
+ * carregada no navegador por `page.tsx`; daqui pra frente o state é local
  * (mesmo gap de "sem estado global entre rotas" já documentado nas outras
  * telas — criar/editar aqui não volta pro backend de verdade ainda, só
  * passa pelo `clientesService` pra manter a chamada no formato que uma API
