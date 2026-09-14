@@ -35,6 +35,7 @@ const { ApiError } = load("src/services/api.ts");
 const api = load("src/services/api.ts");
 const auth = load("src/services/auth.service.ts");
 const session = load("src/lib/session.ts");
+const avaliacao = load("src/services/avaliacao.service.ts");
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
 test("perfil ordena reuniões, usa resumo processado e isola falhas de análise", async (t) => {
@@ -239,6 +240,27 @@ test("sessão malformada é descartada", () => {
     navegador.localStorage.setItem(session.SESSION_STORAGE_KEY, "{invalido");
     assert.equal(session.lerSessao(), null);
     assert.equal(navegador.localStorage.getItem(session.SESSION_STORAGE_KEY), null);
+  } finally {
+    globalThis.window = windowAnterior;
+  }
+});
+
+test("feedback normaliza o comentário e usa o token da sessão", async (t) => {
+  const windowAnterior = globalThis.window;
+  const navegador = navegadorFake();
+  globalThis.window = navegador;
+  session.salvarSessao(session.criarSessao({ token: "feedback-token", tipo: "Bearer", email: "user@mentoai.com.br", role: "EXECUTIVO_COMERCIAL" }));
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.equal(url, "http://backend:8080/api/v1/feedbacks");
+    assert.equal(options.method, "POST");
+    assert.equal(options.headers.get("Authorization"), "Bearer feedback-token");
+    assert.deepEqual(JSON.parse(options.body), { nota: 5, comentario: "Ótimo produto" });
+    return new Response(null, { status: 200 });
+  });
+  try {
+    await avaliacao.enviarFeedback({ nota: 5, comentario: "  Ótimo produto  " });
+    await assert.rejects(avaliacao.enviarFeedback({ nota: 0 }), /1 a 5/);
+    await assert.rejects(avaliacao.enviarFeedback({ nota: 5, comentario: "a".repeat(1001) }), /1000/);
   } finally {
     globalThis.window = windowAnterior;
   }
