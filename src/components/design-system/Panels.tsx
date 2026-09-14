@@ -186,6 +186,8 @@ export function PanelCadastroCliente({
   onClose,
   onCancel,
   onSubmit,
+  loading = false,
+  erro = null,
   className,
 }: {
   cliente?: Cliente;
@@ -193,7 +195,9 @@ export function PanelCadastroCliente({
   porteOpcoes?: string[];
   onClose?: () => void;
   onCancel?: () => void;
-  onSubmit?: (data: ClienteFormInput) => void;
+  onSubmit?: (data: ClienteFormInput) => void | Promise<void>;
+  loading?: boolean;
+  erro?: string | null;
   className?: string;
 }) {
   const [nome, setNome] = useState(cliente?.nome ?? "");
@@ -210,7 +214,7 @@ export function PanelCadastroCliente({
       data-name="Panel/Cadastro-Cliente"
     >
       <PanelHeader titulo={cliente ? "Editar cliente" : "Cadastrar novo cliente"} onClose={onClose} />
-      <div className="flex w-full flex-col items-start gap-4">
+      <fieldset disabled={loading} className="flex w-full min-w-0 flex-col items-start gap-4">
         <CampoTexto
           label="Nome / Razão Social"
           placeholder="Ex: Empresa Exemplo Ltda"
@@ -227,14 +231,16 @@ export function PanelCadastroCliente({
           <span className="text-[12px] leading-4 text-navy">Porte da Empresa</span>
           <SeletorPorte value={porte} onChange={setPorte} opcoes={porteOpcoes} />
         </div>
-      </div>
+      </fieldset>
+      {erro && <p role="alert" className="text-caption text-sinal-risco-churn">{erro}</p>}
       <div className="flex w-full items-start gap-3 pt-3">
-        <BotaoCancelar onClick={onCancel} />
+        <BotaoCancelar onClick={onCancel} disabled={loading} />
         <ButtonPrimary
           className="flex-1 justify-center"
-          onClick={() => onSubmit?.({ id: cliente?.id, nome, segmento, porte })}
+          disabled={loading}
+          onClick={() => void onSubmit?.({ id: cliente?.id, nome, segmento, porte })}
         >
-          Salvar
+          {loading ? "Salvando..." : "Salvar"}
         </ButtonPrimary>
       </div>
     </div>

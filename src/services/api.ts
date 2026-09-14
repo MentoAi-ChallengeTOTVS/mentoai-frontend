@@ -61,7 +61,7 @@ export async function chamarApi<T>(
     headers,
   });
 
-  if (resposta.status === 401 && autenticada && typeof window !== "undefined") {
+  if ((resposta.status === 401 || resposta.status === 403) && autenticada && typeof window !== "undefined") {
     removerSessao(true);
     window.location.replace("/login");
   }

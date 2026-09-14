@@ -10,9 +10,7 @@ import { chamarApi, chamarApiOuNull } from "./api";
  * `GET /api/v1/clientes/{id}` — confirmados no `ClienteController` do
  * backend). `Cliente` (domain.ts) bate campo a campo com a resposta real do
  * backend, então usamos o tipo de domínio direto como genérico — sem DTO
- * próprio em `types/api.ts` pra isso. `criarCliente`/`atualizarCliente`
- * continuam mock — fora do escopo das 4 telas atribuídas nesta rodada
- * (Fila, Reuniões, Detalhe da Reunião, Alertas).
+ * próprio em `types/api.ts` pra isso.
  */
 
 /**
@@ -47,21 +45,26 @@ export interface NovoClienteInput {
   porte: string;
 }
 
-/**
- * Cria um cliente novo. Ainda mock — não faz parte das 4 telas atribuídas
- * nesta rodada. O backend já tem `POST /api/v1/clientes` implementado
- * (`ClienteController.criar`); trocar isto por `chamarApi` real é o próximo
- * passo natural quando essa tela entrar em escopo.
- */
-export async function criarCliente(dados: NovoClienteInput): Promise<Cliente> {
-  return { id: Date.now(), criacao: new Date().toISOString(), ...dados };
+function corpoCliente({ nome, segmento, porte }: NovoClienteInput) {
+  const corpo = { nome: nome.trim(), segmento: segmento.trim(), porte: porte.trim() };
+  if (!corpo.nome || !corpo.segmento || !corpo.porte) {
+    throw new Error("Nome, segmento e porte são obrigatórios.");
+  }
+  return JSON.stringify(corpo);
 }
 
-/**
- * Atualiza um cliente existente. Ainda mock, mesmo motivo de `criarCliente`
- * — o backend já expõe `PUT /api/v1/clientes/{id}`.
- */
-export async function atualizarCliente(id: number, dados: NovoClienteInput): Promise<void> {
-  void id;
-  void dados;
+/** Cria um cliente via `POST /api/v1/clientes`. */
+export async function criarCliente(dados: NovoClienteInput): Promise<Cliente> {
+  return chamarApi<Cliente>("/api/v1/clientes", {
+    method: "POST",
+    body: corpoCliente(dados),
+  });
+}
+
+/** Atualiza um cliente via `PUT /api/v1/clientes/{id}`. */
+export async function atualizarCliente(id: number, dados: NovoClienteInput): Promise<Cliente> {
+  return chamarApi<Cliente>(`/api/v1/clientes/${id}`, {
+    method: "PUT",
+    body: corpoCliente(dados),
+  });
 }

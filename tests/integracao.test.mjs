@@ -29,6 +29,7 @@ process.env.API_INTERNAL_URL = "http://backend:8080";
 process.env.NEXT_PUBLIC_API_URL = "http://localhost:8080";
 const perfil = load("src/services/perfilCliente.service.ts");
 const usuarios = load("src/services/usuarios.service.ts");
+const clientes = load("src/services/clientes.service.ts");
 const reunioes = load("src/services/reunioes.service.ts");
 const { ApiError } = load("src/services/api.ts");
 const api = load("src/services/api.ts");
@@ -97,6 +98,27 @@ test("conflito de usuário preserva status e mensagem de ApiError", async (t) =>
   t.mock.method(globalThis, "fetch", async () => json({ message: "Já existe usuário com o email informado" }, 409));
   await assert.rejects(usuarios.criarUsuario({ nome: "Nome", email: "a@example.com", senha: "123", perfil: "EXECUTIVO_COMERCIAL" }),
     (e) => e instanceof ApiError && e.status === 409 && e.message.includes("email"));
+});
+
+test("clientes criam e atualizam usando os endpoints reais", async (t) => {
+  const chamadas = [];
+  const criado = { id: 10, nome: "Cliente novo", segmento: "Tecnologia", porte: "Médio", criacao: "2026-09-14T12:00:00" };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    chamadas.push({ url, options });
+    return json({ ...criado, nome: JSON.parse(options.body).nome }, options.method === "POST" ? 201 : 200);
+  });
+  const entrada = { nome: " Cliente novo ", segmento: " Tecnologia ", porte: " Médio " };
+  assert.equal((await clientes.criarCliente(entrada)).nome, "Cliente novo");
+  assert.equal((await clientes.atualizarCliente(10, entrada)).id, 10);
+  assert.deepEqual(chamadas.map((c) => [c.url, c.options.method]), [
+    ["http://backend:8080/api/v1/clientes", "POST"],
+    ["http://backend:8080/api/v1/clientes/10", "PUT"],
+  ]);
+  assert.deepEqual(JSON.parse(chamadas[0].options.body), { nome: "Cliente novo", segmento: "Tecnologia", porte: "Médio" });
+  await assert.rejects(
+    clientes.criarCliente({ nome: " ", segmento: "Tecnologia", porte: "Médio" }),
+    /obrigatórios/
+  );
 });
 
 test("upload envia arquivo real e boundary automático, preservando data local e duração zero", async (t) => {
@@ -180,7 +202,7 @@ test("login envia o payload exato, não envia token e produz sessão persistíve
   }
 });
 
-test("API adiciona Bearer, mantém 403 e encerra sessão em 401", async (t) => {
+test("API adiciona Bearer e encerra sessão em 401 ou 403", async (t) => {
   const windowAnterior = globalThis.window;
   const navegador = navegadorFake();
   globalThis.window = navegador;
@@ -192,7 +214,10 @@ test("API adiciona Bearer, mantém 403 e encerra sessão em 401", async (t) => {
 
   try {
     await assert.rejects(api.chamarApi("/api/v1/usuarios"), (e) => e instanceof ApiError && e.status === 403);
-    assert.ok(session.lerSessao());
+    assert.equal(session.lerSessao(), null);
+    assert.equal(navegador.redirecionamento(), "/login");
+
+    session.salvarSessao(session.criarSessao({ token: "abc", tipo: "Bearer", email: "user@mentoai.com.br", role: "EXECUTIVO_COMERCIAL" }));
 
     mock.mock.mockImplementation(async (_url, options) => {
       assert.equal(options.headers.get("Authorization"), "Bearer abc");
