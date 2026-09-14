@@ -25,8 +25,8 @@ const STATUS_LABEL_TO_ENUM = {
 /**
  * Client Component da tela Reuniões — filtros/busca/paginação, mesmo
  * comportamento de antes. Recebe a lista já combinada com status/sinais
- * (carregada pelo Server Component via `reunioesService.
- * listarReunioesComStatus()`) e a contagem em processamento pro badge do
+ * (carregada no navegador via `reunioesService.listarReunioesComStatus()`)
+ * e a contagem em processamento pro badge do
  * link da fila.
  */
 export function ReunioesPageClient({

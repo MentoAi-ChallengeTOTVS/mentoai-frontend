@@ -1,10 +1,14 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Calendar, Clock, ChevronRight, Hourglass, AlertTriangle } from "lucide-react";
 import { BadgeStatus } from "@/components/design-system/Badges";
 import {
   CardResumoExecutivo,
   CardSinaisComerciais,
+  CardInsights,
   CardHistoricoAnalises,
 } from "@/components/design-system/Cards";
 import { buscarDetalheReuniao } from "@/services/reunioes.service";
@@ -29,28 +33,34 @@ import { buscarDetalheReuniao } from "@/services/reunioes.service";
  * `resumoExecutivo`/sinais depois de processada) — pros outros 3 estados,
  * a página mostra um card de estado em vez de conteúdo vazio.
  *
- * Server Component (sem "use client") — a página busca os dados via
- * `reunioesService.buscarDetalheReuniao(id)` (async, já pronto pra virar
- * `fetch` real), sem interatividade própria; `params` é `Promise` (padrão
- * do App Router nesta versão do Next.js).
+ * A página busca os dados no navegador para incluir o JWT da sessão.
  */
 
 function formatData(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-export default async function DetalheReuniaoPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const reuniaoId = Number(id);
-  const detalhe = await buscarDetalheReuniao(reuniaoId);
+type DetalheCarregado = Exclude<Awaited<ReturnType<typeof buscarDetalheReuniao>>, null>;
 
-  if (!detalhe) notFound();
+export default function DetalheReuniaoPage() {
+  const params = useParams<{ id: string }>();
+  const reuniaoId = Number(params.id);
+  const idValido = Number.isSafeInteger(reuniaoId) && reuniaoId > 0;
+  const [detalhe, setDetalhe] = useState<DetalheCarregado | null | undefined>(undefined);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const { reuniao, analise, sinais } = detalhe;
+  useEffect(() => {
+    if (!idValido) return;
+    buscarDetalheReuniao(reuniaoId)
+      .then(setDetalhe)
+      .catch((e) => setErro(e instanceof Error ? e.message : "Não foi possível carregar a reunião."));
+  }, [idValido, reuniaoId]);
+
+  if (erro) return <p role="alert" className="text-corpo text-sinal-risco-churn">{erro}</p>;
+  if (!idValido || detalhe === null) return <p role="alert" className="text-corpo text-neutro-muted">Reunião não encontrada.</p>;
+  if (detalhe === undefined) return <p role="status" className="text-corpo text-neutro-muted">Carregando reunião...</p>;
+
+  const { reuniao, analise, sinais, insights } = detalhe;
   const status = analise?.statusProcessamento ?? "PENDENTE";
 
   return (
@@ -92,6 +102,7 @@ export default async function DetalheReuniaoPage({
         <>
           <CardResumoExecutivo resumoExecutivo={analise.resumoExecutivo} />
           {sinais.length > 0 && <CardSinaisComerciais sinais={sinais} />}
+          {insights.length > 0 && <CardInsights insights={insights} />}
         </>
       ) : status === "ERRO" && analise ? (
         <div className="flex w-full items-start gap-4 rounded-lg border border-sinal-risco-churn bg-sinal-risco-churn/[0.06] p-6">

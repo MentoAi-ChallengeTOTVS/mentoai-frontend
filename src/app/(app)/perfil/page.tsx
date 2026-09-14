@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { LogOut, Pencil } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ButtonPrimary } from "@/components/design-system/Button";
 import { useAuth } from "@/lib/auth";
 
 /**
@@ -24,24 +22,10 @@ const PERFIL_LABEL: Record<string, string> = {
 };
 
 export default function PerfilPage() {
-  const { usuario, atualizarUsuario, logout } = useAuth();
+  const { usuario, logout } = useAuth();
   const router = useRouter();
-  const [editando, setEditando] = useState(false);
-  const [nome, setNome] = useState(usuario?.nome ?? "");
-  const [email, setEmail] = useState(usuario?.email ?? "");
 
   if (!usuario) return null; // guardado pelo (app)/layout.tsx, mas o TS não sabe disso
-
-  function handleSalvar() {
-    atualizarUsuario({ nome, email });
-    setEditando(false);
-  }
-
-  function handleCancelar() {
-    setNome(usuario!.nome);
-    setEmail(usuario!.email);
-    setEditando(false);
-  }
 
   function handleLogout() {
     logout();
@@ -71,60 +55,23 @@ export default function PerfilPage() {
           <div className="flex flex-col items-start gap-1.5">
             <p className="text-subtitulo leading-subtitulo font-medium text-navy">{usuario.nome}</p>
             <span className="w-fit rounded bg-menta-suave px-2 py-0.5 text-caption leading-caption text-menta">
-              {PERFIL_LABEL[usuario.perfil]}
+              {PERFIL_LABEL[usuario.role]}
             </span>
           </div>
         </div>
 
         <div className="h-px w-full bg-neutro-border" />
 
-        {editando ? (
-          <div className="flex w-full flex-col items-start gap-4">
-            <label className="flex w-full flex-col items-start gap-1.5">
-              <span className="text-[12px] leading-4 text-navy">Nome</span>
-              <input
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="h-10 w-full rounded-md border border-neutro-border px-3 text-corpo text-neutro-dark focus:outline-none focus:ring-2 focus:ring-menta-clara"
-              />
-            </label>
-            <label className="flex w-full flex-col items-start gap-1.5">
-              <span className="text-[12px] leading-4 text-navy">E-mail</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-10 w-full rounded-md border border-neutro-border px-3 text-corpo text-neutro-dark focus:outline-none focus:ring-2 focus:ring-menta-clara"
-              />
-            </label>
-            <div className="flex w-full items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleCancelar}
-                className="flex h-10 flex-1 items-center justify-center rounded-md border border-neutro-border text-corpo text-sidebar-muted-2"
-              >
-                Cancelar
-              </button>
-              <ButtonPrimary className="flex-1 justify-center" onClick={handleSalvar}>
-                Salvar
-              </ButtonPrimary>
-            </div>
+        <div className="flex w-full flex-col items-start gap-4">
+          <div className="flex w-full flex-col gap-1">
+            <span className="text-legenda text-neutro-muted">Nome</span>
+            <span className="text-corpo text-neutro-dark">{usuario.nome}</span>
           </div>
-        ) : (
-          <div className="flex w-full flex-col items-start gap-4">
-            <div className="flex w-full flex-col gap-1">
-              <span className="text-legenda text-neutro-muted">Nome</span>
-              <span className="text-corpo text-neutro-dark">{usuario.nome}</span>
-            </div>
-            <div className="flex w-full flex-col gap-1">
-              <span className="text-legenda text-neutro-muted">E-mail</span>
-              <span className="text-corpo text-neutro-dark">{usuario.email}</span>
-            </div>
-            <ButtonPrimary icon={<Pencil className="size-4" />} onClick={() => setEditando(true)}>
-              Editar informações
-            </ButtonPrimary>
+          <div className="flex w-full flex-col gap-1">
+            <span className="text-legenda text-neutro-muted">E-mail</span>
+            <span className="text-corpo text-neutro-dark">{usuario.email}</span>
           </div>
-        )}
+        </div>
 
         <div className="h-px w-full bg-neutro-border" />
 

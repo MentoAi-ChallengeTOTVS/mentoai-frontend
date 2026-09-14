@@ -2,107 +2,86 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar, Clock, ChevronRight, Hourglass, AlertTriangle } from "lucide-react";
+import { Calendar, ChevronRight, Hourglass, WifiOff } from "lucide-react";
 import { BadgeStatus } from "@/components/design-system/Badges";
-import type { ItemFilaSeed } from "@/services/reunioes.service";
-import type { Reuniao } from "@/types/domain";
+import { listarFilaProcessamento } from "@/services/reunioes.service";
+import type { AnaliseFilaResponse } from "@/types/api";
 
-type ItemFila = {
-  reuniaoId: number;
-  reuniao: Reuniao;
-  status: "PENDENTE" | "PROCESSANDO";
-  progresso: number;
-};
-
-type ItemConcluido = {
-  reuniaoId: number;
-  reuniao: Reuniao;
-  concluidoEm: string;
-};
-
-function formatData(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR");
+function formatDataHora(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function formatHora(iso: string) {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-
-const INTERVALO_MS = 2500;
-const INCREMENTO_PROGRESSO = 28;
+const INTERVALO_MS = 2000;
 
 /**
- * Client Component da Fila de Processamento — precisa de `setInterval` pra
- * simular as "atualizações periódicas" sem um backend real fazendo
- * polling. Recebe o seed inicial (reuniões `PENDENTE`/`PROCESSANDO`) já
- * carregado pelo Server Component (`page.tsx`) via `reunioesService.
- * listarFilaProcessamento()`.
+ * Client Component da Fila de Processamento.
  *
- * A cada tick: PENDENTE vira PROCESSANDO, e PROCESSANDO avança progresso
- * até "concluir" (vira PROCESSADA e migra pra lista "Concluídas nesta
- * sessão", cada item já linkando pro Detalhe da Reunião — cobre a
- * "navegação para análises concluídas" do escopo da issue #80). Estado é
- * local à página (mesma limitação de "sem estado global entre rotas" já
- * documentada em Nova Reunião/Clientes/Usuários) — reabrir a página reseta
- * a simulação a partir do seed.
+ * Desde 13/09/2026 não simula mais nada localmente: faz a carga inicial e
+ * um `setInterval` de 2 em 2 segundos
+ * chamando o mesmo endpoint real (`GET /api/v1/analises/fila`) — a
+ * progressão PENDENTE -> PROCESSANDO -> PROCESSADA/ERRO acontece no
+ * backend; aqui só se busca e renderiza o estado mais recente. Sem barra de
+ * progresso/percentual (removida a pedido — o backend não expõe um
+ * percentual de progresso, só o status discreto).
  */
-export function FilaProcessamentoClient({ seed }: { seed: ItemFilaSeed[] }) {
-  const [estado, setEstado] = useState<{ fila: ItemFila[]; concluidas: ItemConcluido[] }>(() => ({
-    fila: seed.map((item) => ({
-      reuniaoId: item.reuniaoId,
-      reuniao: item.reuniao,
-      status: item.status,
-      progresso: item.progresso,
-    })),
-    concluidas: [],
-  }));
+export function FilaProcessamentoClient() {
+  const [estado, setEstado] = useState<AnaliseFilaResponse | null>(null);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      setEstado((prev) => {
-        const proximaFila: ItemFila[] = [];
-        const novasConcluidas: ItemConcluido[] = [];
-        const agora = new Date().toISOString();
+    let cancelado = false;
 
-        for (const item of prev.fila) {
-          if (item.status === "PENDENTE") {
-            proximaFila.push({ ...item, status: "PROCESSANDO", progresso: 15 });
-            continue;
-          }
-          const progresso = Math.min(100, item.progresso + INCREMENTO_PROGRESSO);
-          if (progresso >= 100) {
-            novasConcluidas.push({ reuniaoId: item.reuniaoId, reuniao: item.reuniao, concluidoEm: agora });
-          } else {
-            proximaFila.push({ ...item, progresso });
-          }
+    const atualizar = async () => {
+      try {
+        const atual = await listarFilaProcessamento();
+        if (!cancelado) {
+          setEstado(atual);
+          setOffline(false);
         }
+      } catch {
+        // Backend fora do ar / rede indisponível — mantém o último estado
+        // conhecido na tela em vez de limpar tudo, só sinaliza o problema.
+        if (!cancelado) setOffline(true);
+      }
+    };
 
-        // Sem early-return por "nada mudou" aqui de propósito: mesmo quando o
-        // tamanho da fila não muda entre ticks, o conteúdo dos itens muda
-        // (PENDENTE -> PROCESSANDO, progresso avançando) — checar só o
-        // tamanho pra decidir se retorna `prev` fazia a tela nunca
-        // re-renderizar enquanto a fila mantivesse a mesma quantidade de
-        // itens. Sempre retorna um objeto novo.
-        return {
-          fila: proximaFila,
-          concluidas: [...novasConcluidas, ...prev.concluidas],
-        };
-      });
-    }, INTERVALO_MS);
+    void atualizar();
+    const intervalId = setInterval(atualizar, INTERVALO_MS);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalId);
+    };
   }, []);
 
-  const { fila, concluidas } = estado;
+  if (!estado) {
+    return offline
+      ? <p role="alert" className="text-corpo text-sinal-risco-churn">Não foi possível carregar a fila de processamento.</p>
+      : <p role="status" className="text-corpo text-neutro-muted">Carregando fila de processamento...</p>;
+  }
+
+  const { fila, finalizados } = estado;
 
   return (
     <>
       <div className="flex w-full flex-col items-start gap-1">
         <p className="text-titulo leading-titulo font-medium text-navy">Fila de Processamento</p>
         <p className="text-caption leading-caption text-neutro-muted">
-          Acompanhe o status das análises em andamento — atualiza automaticamente
+          Acompanhe o status das análises em andamento — atualiza automaticamente a cada 2s
         </p>
       </div>
+
+      {offline && (
+        <div className="flex w-full items-center gap-2 rounded-lg border border-sinal-alerta bg-sinal-alerta/[0.08] px-4 py-2.5 text-legenda text-sinal-alerta">
+          <WifiOff className="size-3.5 shrink-0" />
+          Não foi possível atualizar a fila agora — mostrando o último status conhecido.
+        </div>
+      )}
 
       <div className="flex w-full flex-col items-start gap-4">
         <div className="flex w-full items-center gap-2">
@@ -130,37 +109,22 @@ export function FilaProcessamentoClient({ seed }: { seed: ItemFilaSeed[] }) {
           <div className="flex w-full flex-col items-start gap-3">
             {fila.map((item) => (
               <div
-                key={item.reuniaoId}
+                key={item.analiseId}
                 className="flex w-full flex-col items-stretch gap-3 rounded-lg border border-neutro-border bg-white p-4 sm:flex-row sm:items-center sm:gap-4"
               >
                 <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <p className="w-full truncate text-corpo font-medium text-navy">
-                    {item.reuniao.cliente.nome}
+                    {item.clienteNome}
                   </p>
                   <div className="flex items-center gap-3 text-legenda leading-legenda text-neutro-muted">
                     <span className="flex items-center gap-1">
                       <Calendar className="size-3" />
-                      {formatData(item.reuniao.dataReuniao)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {item.reuniao.duracaoMinutos} min
+                      Na fila desde {formatDataHora(item.criadoEm)}
                     </span>
                   </div>
                 </div>
-                <div className="flex w-full flex-col items-start gap-1.5 sm:w-56 sm:shrink-0 sm:items-end">
+                <div className="flex w-full items-start sm:w-auto sm:shrink-0">
                   <BadgeStatus status={item.status} />
-                  {item.status === "PROCESSANDO" && (
-                    <div className="flex w-full flex-col items-start gap-1 sm:items-end">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-menta-suave">
-                        <div
-                          className="h-full rounded-full bg-menta transition-all"
-                          style={{ width: `${item.progresso}%` }}
-                        />
-                      </div>
-                      <span className="text-[11px] text-neutro-muted">{item.progresso}%</span>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -168,15 +132,15 @@ export function FilaProcessamentoClient({ seed }: { seed: ItemFilaSeed[] }) {
         )}
       </div>
 
-      {concluidas.length > 0 && (
+      {finalizados.length > 0 && (
         <div className="flex w-full flex-col items-start gap-4">
           <p className="text-corpo font-medium text-neutro-dark">
-            Concluídas nesta sessão ({concluidas.length})
+            Finalizadas recentemente ({finalizados.length})
           </p>
           <div className="flex w-full flex-col items-start overflow-hidden rounded-lg border border-neutro-border bg-white">
-            {concluidas.map((item, i) => (
+            {finalizados.map((item, i) => (
               <Link
-                key={item.reuniaoId}
+                key={item.analiseId}
                 href={`/reunioes/${item.reuniaoId}`}
                 className={
                   "flex w-full items-center gap-4 border-b border-neutro-border px-4 py-3.5 last:border-b-0 transition-colors hover:bg-neutro-background" +
@@ -184,30 +148,22 @@ export function FilaProcessamentoClient({ seed }: { seed: ItemFilaSeed[] }) {
                 }
               >
                 <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-                  <p className="w-full truncate text-corpo text-navy">{item.reuniao.cliente.nome}</p>
+                  <p className="w-full truncate text-corpo text-navy">{item.clienteNome}</p>
                   <p className="text-legenda text-neutro-muted">
-                    Concluída às {formatHora(item.concluidoEm)}
+                    {item.status === "ERRO"
+                      ? (item.mensagemErro ?? "Erro no processamento")
+                      : item.finalizadoEm
+                        ? `Concluída às ${formatDataHora(item.finalizadoEm)}`
+                        : "Concluída"}
                   </p>
                 </div>
-                <BadgeStatus status="PROCESSADA" />
+                <BadgeStatus status={item.status} />
                 <ChevronRight className="size-4 shrink-0 text-neutro-muted" />
               </Link>
             ))}
           </div>
         </div>
       )}
-
-      <div className="flex w-full items-start gap-3 rounded-lg border border-neutro-border bg-white p-4">
-        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-neutro-muted" />
-        <p className="text-legenda leading-legenda text-neutro-muted">
-          Análises com erro de processamento não aparecem nesta fila — elas ficam visíveis
-          direto no{" "}
-          <Link href="/reunioes" className="font-medium text-menta">
-            Detalhe da Reunião
-          </Link>{" "}
-          correspondente, com a mensagem de erro.
-        </p>
-      </div>
     </>
   );
 }

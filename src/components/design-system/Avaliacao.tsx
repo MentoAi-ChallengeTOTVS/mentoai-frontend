@@ -54,11 +54,14 @@ export function ModalAvaliarServico({
   onNotaChange,
   comentario,
   onComentarioChange,
+  emailCopy,
+  onEmailCopyChange,
   onEnviar,
   onDispensar,
   onClose,
   enviando = false,
   erro = null,
+  sucesso = false,
   className,
 }: {
   aberto: boolean;
@@ -66,6 +69,8 @@ export function ModalAvaliarServico({
   onNotaChange: (v: number) => void;
   comentario: string;
   onComentarioChange: (v: string) => void;
+  emailCopy?: string;
+  onEmailCopyChange?: (v: string) => void;
   onEnviar?: () => void;
   onDispensar?: () => void;
   onClose?: () => void;
@@ -77,6 +82,7 @@ export function ModalAvaliarServico({
   enviando?: boolean;
   /** Mensagem de erro do envio, exibida acima das ações. */
   erro?: string | null;
+  sucesso?: boolean;
   className?: string;
 }) {
   if (!aberto) return null;
@@ -96,40 +102,71 @@ export function ModalAvaliarServico({
         <button
           type="button"
           onClick={onClose}
+          disabled={enviando}
           aria-label="Fechar"
           className="absolute right-6 top-6 flex size-8 items-center justify-center rounded-full"
         >
           <XCircle className="size-4 text-neutro-muted" />
         </button>
 
-        <div className="flex w-full flex-col items-start gap-2">
+        {sucesso ? (
+          <div className="flex w-full flex-col items-start gap-6">
+            <div className="flex w-full flex-col items-start gap-2">
+              <p className="w-full text-subtitulo font-medium text-neutro-dark">Obrigado pelo seu feedback!</p>
+              <p className="w-full text-corpo text-neutro-muted">
+                Sua avaliação foi enviada e nos ajuda a melhorar o MentoAI.
+              </p>
+            </div>
+            <ButtonPrimary className="w-full justify-center py-3.5" onClick={onClose}>
+              Fechar
+            </ButtonPrimary>
+          </div>
+        ) : (
+          <>
+            <div className="flex w-full flex-col items-start gap-2">
           <p className="w-full text-subtitulo font-medium text-neutro-dark">
             Avalie sua experiência com o MentoAI
           </p>
           <p className="w-full text-corpo text-neutro-muted">
             Seu feedback ajuda a melhorar o copiloto comercial.
           </p>
-        </div>
+            </div>
 
-        <StarRating value={nota} onChange={onNotaChange} className="w-full" />
+            <StarRating value={nota} onChange={enviando ? undefined : onNotaChange} className="w-full" />
 
-        <textarea
-          value={comentario}
-          onChange={(e) => onComentarioChange(e.target.value)}
-          placeholder="Conte um pouco mais (opcional)"
-          className="h-[100px] w-full resize-none rounded-lg border border-neutro-border p-3 text-corpo text-neutro-dark placeholder:text-neutro-muted focus:outline-none focus:ring-2 focus:ring-menta-clara"
-        />
+            <textarea
+              value={comentario}
+              onChange={(e) => onComentarioChange(e.target.value)}
+              maxLength={1000}
+              disabled={enviando}
+              placeholder="Conte um pouco mais (opcional)"
+              className="h-[100px] w-full resize-none rounded-lg border border-neutro-border p-3 text-corpo text-neutro-dark placeholder:text-neutro-muted focus:outline-none focus:ring-2 focus:ring-menta-clara disabled:opacity-50"
+            />
 
-        <div className="flex w-full flex-col items-center gap-4">
-          {erro && (
-            <p className="w-full text-caption leading-caption text-sinal-risco-churn">{erro}</p>
-          )}
+            {onEmailCopyChange && (
+              <label className="flex w-full flex-col items-start gap-1.5">
+                <span className="text-[12px] leading-4 font-medium text-neutro-muted">Seu e-mail (opcional)</span>
+                <input
+                  type="email"
+                  value={emailCopy ?? ""}
+                  onChange={(e) => onEmailCopyChange(e.target.value)}
+                  disabled={enviando}
+                  placeholder="seu@email.com"
+                  className="h-11 w-full rounded-lg border border-neutro-border px-3 text-corpo text-neutro-dark placeholder:text-neutro-muted focus:outline-none focus:ring-2 focus:ring-menta-clara disabled:opacity-50"
+                />
+              </label>
+            )}
+
+            <div className="flex w-full flex-col items-center gap-4">
+              {erro && (
+                <p role="alert" className="w-full text-caption leading-caption text-sinal-risco-churn">{erro}</p>
+              )}
           {/* Sem nota escolhida não há o que enviar — o comentário sozinho não
               é uma avaliação. Enquanto isso o botão fica desabilitado. */}
           <ButtonPrimary
             className="w-full justify-center py-3.5"
             onClick={onEnviar}
-            disabled={enviando || nota < 1}
+            disabled={enviando || nota < 1 || !onEnviar}
           >
             {enviando ? "Enviando..." : "Enviar avaliação"}
           </ButtonPrimary>
@@ -141,7 +178,9 @@ export function ModalAvaliarServico({
           >
             Agora não
           </button>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

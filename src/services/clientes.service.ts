@@ -1,38 +1,41 @@
 import type { Cliente } from "@/types/domain";
-import { MOCK_CLIENTES } from "@/mocks/clientes";
+import type { ClientePageResponse } from "@/types/api";
+import { chamarApi, chamarApiOuNull } from "./api";
 
 /**
  * Camada de serviço — bounded context Reunião (entidade `Cliente`).
  *
- * Ponto único de acesso a dado de cliente pras telas consumirem. Hoje
- * devolve os mocks de `src/mocks/clientes.ts`; quando o backend Java
- * existir, o corpo de cada função troca pra um `fetch` contra a API — a
- * assinatura (parâmetros, tipo de retorno, `Promise`) já é a mesma que uma
- * chamada real teria, então nenhuma tela que consome este serviço precisa
- * mudar.
- *
- * Nenhum artificial delay aqui de propósito: essas funções só leem uma
- * lista/registro em memória, sem nada assíncrono de verdade — o delay
- * artificial existe só onde a tela já simula uma ação de rede específica
- * (ex.: envio de reunião, geração de sugestões).
+ * A partir de 13/09/2026, `listarClientes`/`buscarClientePorId` chamam a API
+ * real via `chamarApi`/`chamarApiOuNull` (`GET /api/v1/clientes`,
+ * `GET /api/v1/clientes/{id}` — confirmados no `ClienteController` do
+ * backend). `Cliente` (domain.ts) bate campo a campo com a resposta real do
+ * backend, então usamos o tipo de domínio direto como genérico — sem DTO
+ * próprio em `types/api.ts` pra isso.
  */
 
 /**
- * Lista todos os clientes.
- * Endpoint esperado: `GET /api/clientes`
+ * Lista clientes. `GET /api/v1/clientes` é paginado no backend (máx. 100 por
+ * página, validado no controller) — pedimos o teto pra cobrir os usos atuais
+ * (dropdown de filtro em Reuniões, resolução de nome por id na listagem).
+ * Se a base crescer além de 100 clientes isso deixa de ser suficiente e
+ * passa a precisar de paginação de verdade aqui — não é o caso hoje.
+ * Endpoint: `GET /api/v1/clientes?page=0&size=100&sort=nome&direction=asc`
  */
 export async function listarClientes(): Promise<Cliente[]> {
-  return MOCK_CLIENTES;
+  const pagina = await chamarApi<ClientePageResponse<Cliente>>(
+    "/api/v1/clientes?page=0&size=100&sort=nome&direction=asc",
+    { cache: "no-store" }
+  );
+  return pagina.conteudo;
 }
 
 /**
- * Busca um cliente por id. Devolve `null` se não existir (ao invés de
- * lançar) — quem chama decide se isso vira `notFound()`, mensagem de erro,
- * etc.
- * Endpoint esperado: `GET /api/clientes/{id}`
+ * Busca um cliente por id. Devolve `null` em 404 (cliente inexistente) —
+ * quem chama decide se isso vira `notFound()`, mensagem de erro, etc.
+ * Endpoint: `GET /api/v1/clientes/{id}`
  */
 export async function buscarClientePorId(id: number): Promise<Cliente | null> {
-  return MOCK_CLIENTES.find((c) => c.id === id) ?? null;
+  return chamarApiOuNull<Cliente>(`/api/v1/clientes/${id}`, { cache: "no-store" });
 }
 
 /** Dado de formulário pra criar/editar cliente (mesmo formato usado por `PanelCadastroCliente`). */
@@ -42,23 +45,26 @@ export interface NovoClienteInput {
   porte: string;
 }
 
-/**
- * Cria um cliente novo. Sem persistência real (sem estado global entre
- * rotas, mesmo gap documentado nas outras telas) — a tela mantém o
- * resultado só no próprio state local.
- * Endpoint esperado: `POST /api/clientes`
- */
-export async function criarCliente(dados: NovoClienteInput): Promise<Cliente> {
-  return { id: Date.now(), criacao: new Date().toISOString(), ...dados };
+function corpoCliente({ nome, segmento, porte }: NovoClienteInput) {
+  const corpo = { nome: nome.trim(), segmento: segmento.trim(), porte: porte.trim() };
+  if (!corpo.nome || !corpo.segmento || !corpo.porte) {
+    throw new Error("Nome, segmento e porte são obrigatórios.");
+  }
+  return JSON.stringify(corpo);
 }
 
-/**
- * Atualiza um cliente existente. Devolve `void` (um `PUT` real responderia
- * 200/204 sem precisar devolver o registro inteiro) — quem chama já tem os
- * dados atualizados em mãos e faz o merge no state local.
- * Endpoint esperado: `PUT /api/clientes/{id}`
- */
-export async function atualizarCliente(id: number, dados: NovoClienteInput): Promise<void> {
-  void id;
-  void dados;
+/** Cria um cliente via `POST /api/v1/clientes`. */
+export async function criarCliente(dados: NovoClienteInput): Promise<Cliente> {
+  return chamarApi<Cliente>("/api/v1/clientes", {
+    method: "POST",
+    body: corpoCliente(dados),
+  });
+}
+
+/** Atualiza um cliente via `PUT /api/v1/clientes/{id}`. */
+export async function atualizarCliente(id: number, dados: NovoClienteInput): Promise<Cliente> {
+  return chamarApi<Cliente>(`/api/v1/clientes/${id}`, {
+    method: "PUT",
+    body: corpoCliente(dados),
+  });
 }

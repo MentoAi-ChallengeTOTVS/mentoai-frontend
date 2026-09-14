@@ -2,16 +2,17 @@
 
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import Link from "next/link";
 import { ArrowDown, ArrowUp, CloudUpload, Eye, EyeOff } from "lucide-react";
 import {
   BadgeGeradoPorIA,
   BadgePrioridade,
+  BadgeSeveridade,
   BadgeSinalComercial,
   BadgeStatus,
+  BadgeTipoInsight,
 } from "./Badges";
 import { ButtonPrimary } from "./Button";
-import type { AnaliseIA, PrioridadeAlerta, SinalComercial } from "@/types/domain";
+import type { AnaliseIA, PrioridadeAlerta, Severidade, TipoInsight, TipoSinalComercial } from "@/types/domain";
 
 /**
  * Cards do Design System — os 11 `Card/*` do frame CARDS no Figma
@@ -44,11 +45,15 @@ export function CardUploadTranscricao({
   onFilesSelected,
   acceptDescription = "Formatos aceitos: .txt, .docx, .pdf, .srt",
   accept = ".txt,.docx,.pdf,.srt",
+  multiple = true,
+  disabled = false,
   className,
 }: {
   onFilesSelected?: (files: FileList) => void;
   acceptDescription?: string;
   accept?: string;
+  multiple?: boolean;
+  disabled?: boolean;
   className?: string;
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -57,23 +62,24 @@ export function CardUploadTranscricao({
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={() => inputRef.current?.click()}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (!disabled && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           inputRef.current?.click();
         }
       }}
       onDragOver={(e) => {
         e.preventDefault();
-        setIsDragging(true);
+        if (!disabled) setIsDragging(true);
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={(e) => {
         e.preventDefault();
         setIsDragging(false);
-        if (e.dataTransfer.files.length) onFilesSelected?.(e.dataTransfer.files);
+        if (!disabled && e.dataTransfer.files.length) onFilesSelected?.(e.dataTransfer.files);
       }}
       className={clsx(
         "flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-menta-clara bg-menta-suave p-10 text-center transition-colors",
@@ -87,7 +93,8 @@ export function CardUploadTranscricao({
         ref={inputRef}
         type="file"
         accept={accept}
-        multiple
+        multiple={multiple}
+        disabled={disabled}
         className="hidden"
         onChange={(e) => e.target.files && onFilesSelected?.(e.target.files)}
       />
@@ -108,12 +115,10 @@ export function CardUploadTranscricao({
 
 export function CardLoginForm({
   onSubmit,
-  forgotPasswordHref = "/esqueci-senha",
   loading = false,
   className,
 }: {
   onSubmit?: (data: { email: string; senha: string }) => void;
-  forgotPasswordHref?: string;
   loading?: boolean;
   className?: string;
 }) {
@@ -179,16 +184,10 @@ export function CardLoginForm({
           </label>
         </div>
 
-        <div className="flex w-full flex-col items-center gap-4">
+        <div className="flex w-full flex-col items-center">
           <ButtonPrimary type="submit" disabled={loading} className="w-full justify-center">
             {loading ? "Entrando..." : "Entrar"}
           </ButtonPrimary>
-          <Link
-            href={forgotPasswordHref}
-            className="text-[13px] leading-[18px] font-medium text-menta"
-          >
-            Esqueci minha senha
-          </Link>
         </div>
       </form>
     </div>
@@ -735,14 +734,25 @@ export function CardHistoricoAnalises({
 }
 
 // ---------- Card/Sinais-Comerciais (1156px de referência) ----------
-// Recebe `SinalComercial[]` direto — cada linha reusa `BadgeSinalComercial`
-// (mesmo componente da vitrine de Badges) + `descricao` + `evidencia`.
+// Recebe uma view mínima de `SinalComercial` — só os 4 campos que a linha
+// realmente renderiza (`tipo`/`descricao`/`evidencia` + `id` de key). De
+// propósito, mais estreita que `domain.SinalComercial`: a API real
+// (`SinalComercialResponse`) não aninha `analise` nem usa o nome de campo
+// `severidade` (é `relevancia` lá, ver `src/types/api.ts`), e este card não
+// precisa de nenhum dos dois — a view estrutural aceita os dois formatos.
+
+export interface SinalComercialView {
+  id: number;
+  tipo: TipoSinalComercial;
+  descricao: string;
+  evidencia: string;
+}
 
 export function CardSinaisComerciais({
   sinais,
   className,
 }: {
-  sinais: SinalComercial[];
+  sinais: SinalComercialView[];
   className?: string;
 }) {
   return (
@@ -771,6 +781,57 @@ export function CardSinaisComerciais({
               <p className="w-full text-corpo text-neutro-dark">{sinal.descricao}</p>
               <p className="w-full text-legenda text-neutro-muted">&ldquo;{sinal.evidencia}&rdquo;</p>
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Card/Insights (Detalhe da Reunião) — issue mentoai-collection, Breno ----------
+// Sem frame no Figma pra esta seção (não existia na tela antes de
+// 13/09/2026 — a tarefa "adicionar seção de INSIGHTS no front" veio direto
+// da atribuição de tarefas do time, não do design), montada seguindo o
+// mesmo layout de `Card/Sinais-Comerciais` (mesma família de dado —
+// interpretação da IA em cima da reunião) pra manter consistência visual em
+// vez de inventar um layout novo. `Insight.severidade` usa o mesmo
+// vocabulário visual de `Alerta.prioridade` (`BadgeSeveridade`).
+
+export interface InsightView {
+  id: number;
+  tipo: TipoInsight;
+  descricao: string;
+  severidade: Severidade;
+}
+
+export function CardInsights({
+  insights,
+  className,
+}: {
+  insights: InsightView[];
+  className?: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        "flex w-full flex-col items-start gap-4 rounded-lg border border-neutro-border bg-white p-6",
+        className
+      )}
+      data-name="Card/Insights"
+    >
+      <div className="flex items-center gap-3">
+        <p className="text-subtitulo font-medium text-neutro-dark">Insights</p>
+        <BadgeGeradoPorIA />
+      </div>
+      <div className="flex w-full flex-col items-start">
+        {insights.map((insight) => (
+          <div
+            key={insight.id}
+            className="flex w-full flex-col items-start gap-2 border-b border-neutro-border py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-4"
+          >
+            <BadgeTipoInsight tipo={insight.tipo} className="w-32 shrink-0" />
+            <p className="min-w-0 flex-1 text-corpo text-neutro-dark">{insight.descricao}</p>
+            <BadgeSeveridade nivel={insight.severidade} className="shrink-0" />
           </div>
         ))}
       </div>

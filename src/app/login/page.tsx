@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth";
  * Tela Login (Figma: frame "login-mentoai", 65:501) — feature F01, issue
  * #60. Reaproveita `Card/Login-Form` e `Panel/Boas-Vindas-Login`, já
  * portados no design system, direto — essa página só monta o layout de
- * duas colunas e conecta ao `useAuth()` mockado (ver `src/lib/auth.tsx`).
+ * duas colunas e conecta ao `useAuth()` (ver `src/lib/auth.tsx`).
  *
  * Os dois blobs decorativos do painel navy no Figma (`decor-light-bg`) não
  * foram reproduzidos — são puramente decorativos e os assets exportados
@@ -55,10 +55,6 @@ export default function LoginPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-neutro-background p-6 py-10 sm:p-10">
         <CardLoginForm onSubmit={handleSubmit} loading={enviando} className="w-full max-w-[420px]" />
         {erro && <p className="text-caption leading-caption text-sinal-risco-churn">{erro}</p>}
-        <p className="max-w-[420px] text-center text-caption leading-caption text-neutro-muted">
-          Ambiente de demonstração — qualquer e-mail e senha entram. Use um e-mail com
-          &quot;diretor&quot; (ex.: diretor@mentoai.com) pra ver a sidebar com a seção Administração.
-        </p>
       </div>
     </div>
   );

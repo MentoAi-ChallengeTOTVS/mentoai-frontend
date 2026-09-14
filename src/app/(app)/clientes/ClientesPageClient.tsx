@@ -10,13 +10,13 @@ import {
 } from "@/components/design-system/TableClientes";
 import { PanelCadastroCliente, type ClienteFormInput } from "@/components/design-system/Panels";
 import { criarCliente, atualizarCliente } from "@/services/clientes.service";
+import { ApiError } from "@/services/api";
 import type { Cliente } from "@/types/domain";
 
 /**
  * Client Component da tela Clientes — busca/paginação/drawer de
  * cadastro-edição, mesmo comportamento de antes. Recebe a lista inicial já
- * carregada pelo Server Component (`page.tsx`), que chama
- * `clientesService.listarClientes()`; daqui pra frente o state é local
+ * carregada no navegador por `page.tsx`; daqui pra frente o state é local
  * (mesmo gap de "sem estado global entre rotas" já documentado nas outras
  * telas — criar/editar aqui não volta pro backend de verdade ainda, só
  * passa pelo `clientesService` pra manter a chamada no formato que uma API
@@ -30,6 +30,7 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
   const [pagina, setPagina] = useState(1);
   const [painelAberto, setPainelAberto] = useState<null | "novo" | Cliente>(null);
   const [salvando, setSalvando] = useState(false);
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -53,15 +54,22 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
 
   async function handleSalvar({ id, ...dados }: ClienteFormInput) {
     setSalvando(true);
+    setErroSalvar(null);
     try {
       if (id !== undefined) {
-        await atualizarCliente(id, dados);
-        setClientes((prev) => prev.map((c) => (c.id === id ? { ...c, ...dados } : c)));
+        const atualizado = await atualizarCliente(id, dados);
+        setClientes((prev) => prev.map((c) => (c.id === id ? atualizado : c)));
       } else {
         const novoCliente = await criarCliente(dados);
         setClientes((prev) => [novoCliente, ...prev]);
       }
       setPainelAberto(null);
+    } catch (erro) {
+      setErroSalvar(
+        erro instanceof ApiError || erro instanceof Error
+          ? erro.message
+          : "Não foi possível salvar o cliente."
+      );
     } finally {
       setSalvando(false);
     }
@@ -89,7 +97,10 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
           </div>
           <ButtonPrimary
             icon={<Plus className="size-4" />}
-            onClick={() => setPainelAberto("novo")}
+            onClick={() => {
+              setErroSalvar(null);
+              setPainelAberto("novo");
+            }}
             className="justify-center"
           >
             Novo cliente
@@ -105,7 +116,9 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
         <TabelaClientesCabecalho />
         {clientesDaPagina.length === 0 ? (
           <p className="w-full px-6 py-10 text-center text-corpo text-neutro-muted">
-            Nenhum cliente encontrado para &quot;{busca}&quot;.
+            {busca.trim()
+              ? `Nenhum cliente encontrado para ‘${busca.trim()}’.`
+              : "Nenhum cliente disponível."}
           </p>
         ) : (
           clientesDaPagina.map((cliente, i) => (
@@ -113,7 +126,10 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
               key={cliente.id}
               cliente={cliente}
               striped={i % 2 === 1}
-              onEditar={() => setPainelAberto(cliente)}
+              onEditar={() => {
+                setErroSalvar(null);
+                setPainelAberto(cliente);
+              }}
             />
           ))
         )}
@@ -138,6 +154,8 @@ export function ClientesPageClient({ clientesIniciais }: { clientesIniciais: Cli
               onClose={() => setPainelAberto(null)}
               onCancel={() => setPainelAberto(null)}
               onSubmit={handleSalvar}
+              loading={salvando}
+              erro={erroSalvar}
             />
           </div>
         </div>

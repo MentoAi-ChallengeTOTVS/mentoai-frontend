@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
 import { RowAlerta } from "@/components/design-system/Rows";
-import { marcarComoLido } from "@/services/alertas.service";
-import type { AlertaUsuario, PrioridadeAlerta } from "@/types/domain";
+import { marcarComoLido, type AlertaListItem } from "@/services/alertas.service";
+import type { PrioridadeAlerta } from "@/types/domain";
 
 const TAMANHO_PAGINA = 8; // bate com o "Exibindo 8 de 8 alertas comerciais" do Figma
 
@@ -19,6 +20,16 @@ const PRIORIDADE_LABEL_TO_ENUM: Record<Exclude<OpcaoPrioridade, "Todas">, Priori
   Média: "MEDIA",
   Baixa: "BAIXA",
 };
+
+function formatDataHora(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 /**
  * Chip de filtro da Central de Alertas. Não é o `FilterSelect` (dropdown) das
@@ -81,32 +92,34 @@ function GrupoChips<T extends string>({
 
 /**
  * Client Component da Central de Alertas — filtros por chip, paginação e
- * marcação de lido.
+ * marcação de lido e acesso à análise de origem.
  *
- * A marcação é otimista e local: sem estado global entre rotas (gap já
- * documentado nas outras telas), marcar um alerta aqui não se reflete no
- * KPI do Dashboard nem sobrevive a um F5. Isso é esperado até o backend
- * existir.
+ * Desde 13/09/2026 os alertas vêm da API real (`GET /api/v1/alertas`), mas
+ * o item não é mais `AlertaUsuario` (domain.ts) — é `AlertaListItem`
+ * (`alertas.service.ts`), mais plano. Dois efeitos disso na tela:
+ *
+ * 1. A coluna que antes mostrava o nome do cliente agora mostra a data de
+ *    criação do alerta.
+ * 2. "Lido" continua sendo estado local otimista (sem persistência real —
+ *    mesma limitação de antes), mas agora a chamada que dispara ao marcar
+ *    é um `PATCH` de verdade contra o backend, não mais um no-op.
  */
-export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: AlertaUsuario[] }) {
+export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: AlertaListItem[] }) {
   const [alertas, setAlertas] = useState(alertasIniciais);
   const [filtroPrioridade, setFiltroPrioridade] = useState<OpcaoPrioridade>("Todas");
   const [filtroStatus, setFiltroStatus] = useState<OpcaoStatus>("Todos");
   const [pagina, setPagina] = useState(1);
 
-  const naoLidos = alertas.filter((au) => !au.lido).length;
+  const naoLidos = alertas.filter((a) => !a.lido).length;
 
   const filtrados = useMemo(
     () =>
-      alertas.filter((au) => {
-        if (
-          filtroPrioridade !== "Todas" &&
-          au.alerta.prioridade !== PRIORIDADE_LABEL_TO_ENUM[filtroPrioridade]
-        ) {
+      alertas.filter((a) => {
+        if (filtroPrioridade !== "Todas" && a.prioridade !== PRIORIDADE_LABEL_TO_ENUM[filtroPrioridade]) {
           return false;
         }
-        if (filtroStatus === "Lidos" && !au.lido) return false;
-        if (filtroStatus === "Não lidos" && au.lido) return false;
+        if (filtroStatus === "Lidos" && !a.lido) return false;
+        if (filtroStatus === "Não lidos" && a.lido) return false;
         return true;
       }),
     [alertas, filtroPrioridade, filtroStatus]
@@ -124,15 +137,13 @@ export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: Alerta
     };
   }
 
-  async function handleMarcarLido(alertaUsuarioId: number) {
-    // Atualização otimista: a linha muda de estado na hora e a chamada ao
-    // serviço acontece depois (hoje é no-op, amanhã é um PATCH).
-    setAlertas((prev) =>
-      prev.map((au) =>
-        au.id === alertaUsuarioId ? { ...au, lido: true, lidoEm: new Date().toISOString() } : au
-      )
-    );
-    await marcarComoLido(alertaUsuarioId);
+  async function handleMarcarLido(alertaId: number) {
+    // Atualização otimista: a linha muda de estado na hora e o PATCH real
+    // acontece depois — se falhar, a linha só volta a ficar "não lido" no
+    // próximo F5 (sem estado global entre rotas, gap já documentado nas
+    // outras telas).
+    setAlertas((prev) => prev.map((a) => (a.id === alertaId ? { ...a, lido: true } : a)));
+    await marcarComoLido(alertaId);
   }
 
   return (
@@ -177,10 +188,11 @@ export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: Alerta
         data-name="table-card"
       >
         <div className="hidden w-full items-start gap-4 border-b border-neutro-border bg-[#f8fafc] px-6 py-3.5 text-legenda leading-legenda text-sidebar-muted-2 sm:flex">
-          <p className="w-55 shrink-0">CLIENTE</p>
+          <p className="w-55 shrink-0">DATA</p>
           <p className="flex-1">MOTIVO DO ALERTA (ANÁLISE COMERCIAL IA)</p>
           <p className="w-30 shrink-0 text-center">PRIORIDADE</p>
           <p className="w-30 shrink-0 text-right">STATUS</p>
+          <p className="w-40 shrink-0 text-right">AÇÕES</p>
         </div>
 
         {itensDaPagina.length === 0 ? (
@@ -188,34 +200,37 @@ export function AlertasPageClient({ alertasIniciais }: { alertasIniciais: Alerta
             Nenhum alerta encontrado para os filtros selecionados.
           </p>
         ) : (
-          itensDaPagina.map((au) => {
-            const linha = (
+          itensDaPagina.map((item) => {
+            return (
               <RowAlerta
-                clienteNome={au.alerta.sinalComercial.analise.reuniao.cliente.nome}
-                motivo={au.alerta.descricao}
-                prioridade={au.alerta.prioridade}
-                lido={au.lido}
+                key={item.id}
+                rotulo={formatDataHora(item.criacao)}
+                motivo={item.motivo}
+                prioridade={item.prioridade}
+                lido={item.lido}
+                acoes={
+                  <>
+                    {item.reuniaoId !== null && (
+                      <Link
+                        href={`/reunioes/${item.reuniaoId}`}
+                        className="whitespace-nowrap text-legenda font-medium text-menta hover:underline"
+                      >
+                        Ver análise
+                      </Link>
+                    )}
+                    {!item.lido && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarcarLido(item.id)}
+                        aria-label={`Marcar alerta "${item.motivo}" como lido`}
+                        className="whitespace-nowrap text-legenda text-neutro-muted hover:text-neutro-dark hover:underline"
+                      >
+                        Marcar como lido
+                      </button>
+                    )}
+                  </>
+                }
               />
-            );
-
-            // O frame não mostra botão dedicado de "marcar como lido" — a
-            // própria linha é o alvo do clique. Já lida, deixa de ser botão
-            // (não há o que fazer com ela, e um botão inerte só atrapalharia
-            // quem navega por teclado).
-            return au.lido ? (
-              <div key={au.id} className="w-full">
-                {linha}
-              </div>
-            ) : (
-              <button
-                key={au.id}
-                type="button"
-                onClick={() => handleMarcarLido(au.id)}
-                aria-label={`Marcar alerta de ${au.alerta.sinalComercial.analise.reuniao.cliente.nome} como lido`}
-                className="w-full cursor-pointer text-left transition-colors hover:bg-neutro-background/60"
-              >
-                {linha}
-              </button>
             );
           })
         )}

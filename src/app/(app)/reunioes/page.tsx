@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { listarReunioesComStatus, contarEmProcessamento } from "@/services/reunioes.service";
 import { ReunioesPageClient } from "./ReunioesPageClient";
+import type { ReuniaoListItem } from "@/services/reunioes.service";
 
 /**
  * Tela Reuniões — lista (Figma: frame "reunioes-lista-mentoai", 49:403) —
@@ -20,14 +24,20 @@ import { ReunioesPageClient } from "./ReunioesPageClient";
  * fila` — issue #80 (F04). Sem frame no Figma pra esse link nem pra
  * dependência da tela em si; ver nota completa em `reunioes/fila/page.tsx`.
  *
- * Server Component (busca via `reunioesService`) + Client Component
- * (`ReunioesPageClient`, filtros/paginação) — mesmo padrão adotado em
- * todas as telas em 24/08/2026 pra preparar o frontend pro backend.
+ * A carga inicial ocorre no navegador para incluir o JWT; o componente de
+ * apresentação continua responsável pelos filtros e paginação.
  */
-export default async function ReunioesPage() {
-  const [itens, emProcessamento] = await Promise.all([
-    listarReunioesComStatus(),
-    contarEmProcessamento(),
-  ]);
-  return <ReunioesPageClient itensIniciais={itens} emProcessamento={emProcessamento} />;
+export default function ReunioesPage() {
+  const [dados, setDados] = useState<{ itens: ReuniaoListItem[]; emProcessamento: number } | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([listarReunioesComStatus(), contarEmProcessamento()])
+      .then(([itens, emProcessamento]) => setDados({ itens, emProcessamento }))
+      .catch((e) => setErro(e instanceof Error ? e.message : "Não foi possível carregar as reuniões."));
+  }, []);
+
+  if (erro) return <p role="alert" className="text-corpo text-sinal-risco-churn">{erro}</p>;
+  if (!dados) return <p role="status" className="text-corpo text-neutro-muted">Carregando reuniões...</p>;
+  return <ReunioesPageClient itensIniciais={dados.itens} emProcessamento={dados.emProcessamento} />;
 }

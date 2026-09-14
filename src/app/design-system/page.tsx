@@ -230,7 +230,7 @@ export default function DesignSystemPreview() {
             <RowReuniao reuniao={REUNIAO_EXEMPLO} tiposSinais={["OPORTUNIDADE", "RISCO_CHURN", "CONCORRENCIA"]} />
             <RowUsuario usuario={USUARIO_EXEMPLO} />
             <RowAlerta
-              clienteNome="Cervejaria Artesanal SP"
+              rotulo="Cervejaria Artesanal SP"
               motivo="Mencionou insatisfação recorrente com o prazo de entrega nas últimas 3 reuniões"
               prioridade="ALTA"
               lido={false}

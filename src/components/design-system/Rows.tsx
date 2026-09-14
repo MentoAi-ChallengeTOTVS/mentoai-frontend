@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Calendar, Building2, ChevronRight, Pencil } from "lucide-react";
 import { BadgeStatus, BadgePrioridade, BadgeStatusAcesso } from "./Badges";
 import type {
@@ -206,18 +207,25 @@ export function RowUsuario({
 }
 
 // ---------- Row/Alerta ----------
+// `rotulo` era `clienteNome` até 13/09/2026 — renomeado porque a Central de
+// Alertas real (API) não consegue mais resolver o nome do cliente por linha
+// (ver GAP documentado em `alertas.service.ts`) e passou a usar a data de
+// criação do alerta nesse lugar. O componente ficou agnóstico ao conteúdo;
+// quem chama decide o que faz mais sentido mostrar ali.
 
 export function RowAlerta({
-  clienteNome,
+  rotulo,
   motivo,
   prioridade,
   lido,
+  acoes,
   className,
 }: {
-  clienteNome: string;
+  rotulo: string;
   motivo: string;
   prioridade: PrioridadeAlerta;
   lido: boolean;
+  acoes?: ReactNode;
   className?: string;
 }) {
   return (
@@ -239,7 +247,7 @@ export function RowAlerta({
           className={clsx("size-2.5 shrink-0 rounded-full", lido ? "invisible" : "bg-menta")}
           aria-hidden="true"
         />
-        <p className="min-w-0 flex-1 truncate text-corpo text-navy">{clienteNome}</p>
+        <p className="min-w-0 flex-1 truncate text-corpo text-navy">{rotulo}</p>
       </div>
       {/* Linha já lida fica com o motivo em cinza — é o que separa lida de não
           lida visualmente na tela de Alertas, junto com o ponto acima. */}
@@ -260,6 +268,7 @@ export function RowAlerta({
             {lido ? "Lido" : "Não lido"}
           </p>
         </div>
+        {acoes && <div className="flex shrink-0 items-center gap-2">{acoes}</div>}
       </div>
     </div>
   );
