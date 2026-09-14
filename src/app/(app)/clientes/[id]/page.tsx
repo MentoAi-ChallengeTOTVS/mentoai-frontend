@@ -38,10 +38,14 @@ export default async function PerfilClientePage({ params }: { params: Promise<{ 
           {timeline.length === 0 ? (
             <div className="w-full rounded-lg border border-dashed border-neutro-border bg-white p-6 text-corpo text-neutro-muted">Esse cliente ainda não tem nenhuma reunião registrada.</div>
           ) : (
-            <div className="flex w-full flex-col items-start">
+            <div
+              className="flex w-full flex-col items-start lg:max-h-[calc(100dvh-15rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2"
+              aria-label="Histórico de reuniões do cliente"
+            >
               {timeline.map((item, i) => (
                 <ItemTimelineReuniao key={item.reuniao.id} reuniao={item.reuniao} resumo={resumoDoItem(item)}
-                  status={item.analise?.statusProcessamento} ultimo={i === timeline.length - 1} />
+                  status={item.analise?.statusProcessamento} href={`/reunioes/${item.reuniao.id}`}
+                  ultimo={i === timeline.length - 1} />
               ))}
             </div>
           )}
