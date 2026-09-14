@@ -32,14 +32,14 @@ export default async function PerfilClientePage({ params }: { params: Promise<{ 
         </div>
       </div>
       {analisesIncompletas && <p role="status" className="text-corpo text-sinal-alerta">Não foi possível carregar algumas análises. O histórico e o resumo podem estar incompletos.</p>}
-      <div className="flex w-full flex-col items-start gap-6 lg:flex-row">
-        <div className="flex w-full min-w-0 flex-1 flex-col items-start gap-5">
+      <div className="flex w-full flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:flex-row lg:overflow-hidden">
+        <div className="flex w-full min-w-0 flex-1 flex-col items-start gap-5 lg:h-full lg:min-h-0 lg:overflow-hidden">
           <h2 className="text-subtitulo font-medium text-neutro-dark">Linha do Tempo de Reuniões</h2>
           {timeline.length === 0 ? (
             <div className="w-full rounded-lg border border-dashed border-neutro-border bg-white p-6 text-corpo text-neutro-muted">Esse cliente ainda não tem nenhuma reunião registrada.</div>
           ) : (
             <div
-              className="flex w-full flex-col items-start lg:max-h-[calc(100dvh-15rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2"
+              className="flex w-full flex-col items-start lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2"
               aria-label="Histórico de reuniões do cliente"
             >
               {timeline.map((item, i) => (

@@ -148,7 +148,7 @@ export function Sidebar({
           // desliza pra dentro quando mobileOpen. Em lg+: volta a ser um item de
           // flex normal, sempre visível — h-screen em vez do h-[900px] fixo do
           // frame do Figma, pra esticar com a viewport numa página real.
-          "fixed inset-y-0 left-0 z-50 flex h-screen w-[260px] shrink-0 flex-col justify-between bg-navy py-6 transition-transform duration-200 ease-out",
+          "fixed inset-y-0 left-0 z-50 flex h-dvh w-[260px] shrink-0 flex-col justify-between bg-navy py-6 transition-transform duration-200 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:static lg:z-auto lg:w-[220px] lg:translate-x-0",
           className

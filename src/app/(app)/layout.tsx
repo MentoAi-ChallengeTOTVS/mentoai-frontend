@@ -55,7 +55,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-stretch bg-neutro-background">
+    <div className="flex h-dvh w-full items-stretch overflow-hidden bg-neutro-background">
       <Sidebar
         activeHref={pathname}
         perfil={usuario.perfil}
@@ -74,7 +74,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         mobileOpen={menuAberto}
         onMobileClose={() => setMenuAberto(false)}
       />
-      <div className="flex min-w-0 flex-1 flex-col items-stretch">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
         <header className="flex items-center gap-3 border-b border-neutro-border bg-white px-4 py-3 lg:hidden">
           <button
             type="button"
@@ -87,7 +87,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Image src="/logo-mentoai.png" alt="" width={24} height={24} className="size-6 shrink-0" />
           <p className="text-corpo font-medium text-navy">MentoAI</p>
         </header>
-        <main className="flex min-w-0 flex-1 flex-col items-start gap-6 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col items-start gap-6 overflow-y-auto p-4 sm:p-6 max-h-screen lg:p-8">{children}</main>
       </div>
       {buscaAberta && <BuscaGlobalOverlay onClose={() => setBuscaAberta(false)} />}
       {avaliacaoAberta && <AvaliacaoOverlay onClose={() => setAvaliacaoAberta(false)} />}
